@@ -4,7 +4,7 @@ import random
 
 
 class TableRLBase(object):
-    def __init__(self, env_name, num_episodes, alpha, epsilon):
+    def __init__(self, env_name, num_episodes, alpha, epsilon, **kwargs):
         """
         base class for RL using lookup table
         :param env_name: name of environment
@@ -21,6 +21,8 @@ class TableRLBase(object):
         self.epsilon = epsilon
         self.state = None
         self._rewards = None
+        for k, v in kwargs.items():
+            setattr(self, str(k), v)
 
     def epsilon_greedy(self):
         """

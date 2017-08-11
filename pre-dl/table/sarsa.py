@@ -1,10 +1,9 @@
-from base import TableRLBase
+from table.base import TableRLBase
 
 
 class Sarsa(TableRLBase):
-    def __init__(self, env_name, num_episodes=10000, alpha=0.9, epsilon=1e-2, gamma=0.9):
-        super(Sarsa, self).__init__(env_name, num_episodes, alpha, epsilon)
-        self.gamma = gamma
+    def __init__(self, env_name, num_episodes=5000, alpha=0.9, gamma=0.9, epsilon=1e-2):
+        super(Sarsa, self).__init__(env_name, num_episodes, alpha, epsilon, gamma=gamma)
 
     def _loop(self):
         done = False
@@ -22,11 +21,11 @@ class Sarsa(TableRLBase):
         return total_reward
 
 
-def main(plot=True, env_name="Taxi-v2", test_init_state=7):
+def main(plot=True, env_name="Taxi-v2", test_init_state=77):
     print("start training")
-    sarsa9 = Sarsa(env_name, gamma=0.9)
-    sarsa5 = Sarsa(env_name, gamma=0.5)
-    sarsa1 = Sarsa(env_name, gamma=0.1)
+    sarsa9 = Sarsa(env_name, alpha=0.9)
+    sarsa5 = Sarsa(env_name, alpha=0.5)
+    sarsa1 = Sarsa(env_name, alpha=0.1)
 
     # training
     sarsa9()
@@ -43,12 +42,12 @@ def main(plot=True, env_name="Taxi-v2", test_init_state=7):
 
     if plot:
         import matplotlib.pyplot as plt
-        plt.plot(sarsa1.rewards, label="gamma=0.1", alpha=0.5)
-        plt.plot(sarsa5.rewards, label="gamma=0.5", alpha=0.5)
-        plt.plot(sarsa9.rewards, label="gamma=0.9", alpha=0.5)
+        plt.plot(sarsa1.rewards, label="alpha=0.1", alpha=0.5)
+        plt.plot(sarsa5.rewards, label="alpha=0.5", alpha=0.5)
+        plt.plot(sarsa9.rewards, label="alpha=0.9", alpha=0.5)
         plt.legend()
         plt.show()
 
 
 if __name__ == '__main__':
-    main(plot=False)
+    main()
