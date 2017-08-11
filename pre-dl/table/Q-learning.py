@@ -7,7 +7,7 @@ from table.base import TableRLBase
 
 class QLearing(TableRLBase):
     def __init__(self, env_name, num_episodes=5000, alpha=0.9, gamma=0.9, epsilon=1e-2):
-        super(QLearing, self).__init__(env_name, num_episodes, alpha, epsilon, gamma=gamma)
+        super(QLearing, self).__init__(env_name, num_episodes, alpha, gamma, epsilon)
 
     def _loop(self):
         done = False

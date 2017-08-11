@@ -4,7 +4,7 @@ import random
 
 
 class TableRLBase(object):
-    def __init__(self, env_name, num_episodes, alpha, epsilon, **kwargs):
+    def __init__(self, env_name, num_episodes, alpha, gamma, epsilon, **kwargs):
         """
         base class for RL using lookup table
         :param env_name: name of environment
@@ -18,6 +18,7 @@ class TableRLBase(object):
         self.q_table = torch.zeros(self.obs_size, self.action_size)
         self.num_episodes = num_episodes
         self.alpha = alpha
+        self.gamma = gamma
         self.epsilon = epsilon
         self.state = None
         self._rewards = None
@@ -52,7 +53,7 @@ class TableRLBase(object):
             total_reward_list.append(total_reward)
 
             if episode % 100 == 0:
-                print(f"episode:{episode} total reward:{total_reward}")
+                print(f"episode:{episode} total reward:{total_reward:.2f}")
         self._rewards = total_reward_list
 
     def test(self, init_state=-1):
