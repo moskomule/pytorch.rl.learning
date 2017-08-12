@@ -15,7 +15,7 @@ class SarsaLambda(TableRLBase):
         action = self.epsilon_greedy()
         while not done:
             _state, reward, done, _ = self.env.step(action)
-            _action = self.q_table[_state].max(dim=0)[1][0]
+            _action = self.argmax(self.q_table[_state])
             delta = reward + self.gamma * self.q_table[_state, _action] - self.q_table[self.state, action]
             self.e_table[self.state, action] += 1
             self.q_table += self.alpha * delta * self.e_table

@@ -7,12 +7,20 @@ class TableRLBase(object):
     def __init__(self, env_name, num_episodes, alpha, gamma, epsilon, **kwargs):
         """
         base class for RL using lookup table
-        :param env_name: name of environment
+        :param env_name: name of environment, currently environments whose observation space and action space are
+        both Discrete are supported. see https://github.com/openai/gym/wiki/Table-of-environments
         :param num_episodes: number of episode for training
         :param alpha:
+        :param gamma:
         :param epsilon:
+        :param kwargs: other arguments.
         """
         self.env = gym.make(env_name)
+
+        if not isinstance(self.env.action_space, gym.spaces.Discrete) or \
+                not isinstance(self.env.observation_space, gym.spaces.Discrete):
+            raise NotImplementedError("action_space and observation_space should be Discrete")
+
         self.obs_size = self.env.observation_space.n
         self.action_size = self.env.action_space.n
         self.q_table = torch.zeros(self.obs_size, self.action_size)
@@ -30,15 +38,16 @@ class TableRLBase(object):
         epsilon greedy method
         :return: action (int)
         """
-        if random.random() > self.epsilon:
-            action = self.q_table[self.state].max(dim=0)[1][0]
+        _epsilon = self.epsilon * (1 - 1 / self.action_size)
+        if random.random() > _epsilon:
+            action = self.argmax(self.q_table[self.state])
         else:
             action = random.randrange(0, self.action_size)
         return action
 
     def _loop(self):
         """
-        loop in an episode
+        Loop in an episode. You need to implement.
         :return: total_reward (list)
         """
         raise NotImplementedError
@@ -66,16 +75,18 @@ class TableRLBase(object):
         state = self.env.reset() if init_state is -1 else init_state
         while not done:
             self.env.render()
-            action = self.q_table[state].max(dim=0)[1][0]
-            print(action)
+            action = self.argmax(self.q_table[state])
             state, reward, done, _ = self.env.step(action)
             total_reward += reward
             counter += 1
         print(f"total reward {total_reward} in {counter} steps")
 
-    def __call__(self):
-        return self.train()
+    __call__ = train
 
     @property
     def rewards(self):
         return self._rewards
+
+    @staticmethod
+    def argmax(x: torch.Tensor):
+        return x.max(dim=0)[1][0]
