@@ -69,6 +69,11 @@ class FABase(object):
         raise NotImplementedError
 
     def schedule_alpha(self, episode):
+        """
+        schedule learning rate, this is optional
+        :param episode:
+        :return:
+        """
         pass
 
     def train(self):
@@ -109,7 +114,7 @@ class FABase(object):
     @property
     def weight(self):
         if self._weight is None:
-            self._weight = Tensor(self.obs_size * self.action_size).zero_()
+            self._weight = Tensor(self.obs_size * self.action_size).normal_(0, 1)
         return self._weight
 
     @weight.setter
@@ -118,9 +123,7 @@ class FABase(object):
 
     def feature(self, state, action):
         """
-        :param state:
-        :param action:
-        :return: feature from state and action
+        create feature from (state, action)
         """
         self._feature.zero_()
         self._feature[action] = to_tensor(state).float()

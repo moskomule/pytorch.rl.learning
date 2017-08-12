@@ -2,9 +2,9 @@ from function_approximation.base import FABase
 import matplotlib.pyplot as plt
 
 
-class Sarsa(FABase):
+class QLearning(FABase):
     def __init__(self, env_name, num_episodes=50000, alpha=0.9, gamma=0.9, epsilon=1e-1, min_alpha=1e-3):
-        super(Sarsa, self).__init__(env_name, num_episodes, alpha, gamma, epsilon, min_alpha=min_alpha)
+        super(QLearning, self).__init__(env_name, num_episodes, alpha, gamma, epsilon, min_alpha=min_alpha)
 
     def _loop(self):
         done = False
@@ -13,14 +13,12 @@ class Sarsa(FABase):
         action = self.epsilon_greedy()
         while not done:
             _state, reward, done, _ = self.env.step(action)
-            _action = self.argmax([self.app_q(_state, a) for a in range(self.action_size)])
             q = self.app_q(self.state, action)
-            target = reward + self.gamma * self.app_q(_state, _action)
+            target = reward + self.gamma * max([self.app_q(_state, a) for a in range(self.action_size)])
             # todo use autograd instead
             self.weight -= self.alpha * (target - q) * self.feature(self.state, action)
             total_reward += reward
             self.state = _state
-            action = _action
         return total_reward
 
     def schedule_alpha(self, episode):
@@ -30,17 +28,16 @@ class Sarsa(FABase):
 
 def main(plot=True, env_name='CartPole-v0'):
     print("start training")
-    sarsa = Sarsa(env_name)
+    ql = QLearning(env_name)
 
     # training
-    sarsa()
+    ql()
 
-    plt.plot(sarsa.rewards)
-    plt.legend()
+    plt.plot(ql.rewards)
     plt.show()
-    sarsa.test()
-    sarsa.test()
-    sarsa.test()
+    ql.test()
+    ql.test()
+    ql.test()
 
 
 if __name__ == '__main__':
