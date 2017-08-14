@@ -27,19 +27,6 @@ class TableBase(RLBase):
         self.action_size = self.env.action_space.n
         self.q_table = torch.zeros(self.obs_size, self.action_size)
 
-    @property
-    def epsilon_greedy(self) -> int:
-        """
-        epsilon greedy method
-        :return: action (int)
-        """
-        _epsilon = self.epsilon * (1 - 1 / self.action_size)
-        if random.random() > _epsilon:
-            action = self.argmax(self.q_table[self.state])
-        else:
-            action = random.randrange(0, self.action_size)
-        return action
-
     def test(self, init_state=-1):
         """
         testing the trained model
@@ -55,3 +42,16 @@ class TableBase(RLBase):
             total_reward += reward
             counter += 1
         print(f"total reward {total_reward} in {counter} steps")
+
+    @property
+    def epsilon_greedy(self) -> int:
+        """
+        epsilon greedy method
+        :return: action (int)
+        """
+        _epsilon = self.epsilon * (1 - 1 / self.action_size)
+        if random.random() > _epsilon:
+            action = self.argmax(self.q_table[self.state])
+        else:
+            action = random.randrange(0, self.action_size)
+        return action

@@ -44,15 +44,6 @@ class FABase(RLBase):
 
         return self.weight @ self.feature(state, action)
 
-    @property
-    def epsilon_greedy(self) -> int:
-        _epsilon = self.epsilon * (1 - 1 / self.action_size)
-        if random.random() > _epsilon:
-            action = self.argmax([self.app_q(self.state, a) for a in range(self.action_size)])
-        else:
-            action = random.randrange(0, self.action_size)
-        return action
-
     def test(self, render=False, interval=0.1):
         """
         testing the trained model
@@ -89,3 +80,12 @@ class FABase(RLBase):
         self._feature.zero_()
         self._feature[action] = to_tensor(state).float()
         return self._feature.view(-1)
+
+    @property
+    def epsilon_greedy(self) -> int:
+        _epsilon = self.epsilon * (1 - 1 / self.action_size)
+        if random.random() > _epsilon:
+            action = self.argmax([self.app_q(self.state, a) for a in range(self.action_size)])
+        else:
+            action = random.randrange(0, self.action_size)
+        return action
