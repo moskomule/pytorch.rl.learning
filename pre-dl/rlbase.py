@@ -2,7 +2,7 @@ import gym
 from torch import Tensor
 
 
-class Base(object):
+class RLBase(object):
     """
     abstracted class for reinforcement learning scripts in `pre_dr`
     """

@@ -1,4 +1,4 @@
-from base import Base
+from base import RLBase
 
 import gym
 import torch
@@ -9,7 +9,7 @@ from functools import reduce
 from time import sleep
 
 
-class FABase(Base):
+class FABase(RLBase):
     def __init__(self, env_name, num_episodes, alpha, gamma, epsilon, policy, **kwargs):
         """
         base class for RL using lookup table

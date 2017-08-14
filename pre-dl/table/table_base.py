@@ -1,11 +1,11 @@
-from base import Base
+from base import RLBase
 
 import gym
 import torch
 import random
 
 
-class TableBase(Base):
+class TableBase(RLBase):
     def __init__(self, env_name, num_episodes, alpha, gamma, epsilon, policy, **kwargs):
         """
         base class for RL using lookup table
