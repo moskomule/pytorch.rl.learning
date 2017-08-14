@@ -1,3 +1,5 @@
+from base import Base
+
 import gym
 import torch
 from torch import Tensor
@@ -7,7 +9,7 @@ from functools import reduce
 from time import sleep
 
 
-class FABase(object):
+class FABase(Base):
     def __init__(self, env_name, num_episodes, alpha, gamma, epsilon, policy, **kwargs):
         """
         base class for RL using lookup table
@@ -19,7 +21,7 @@ class FABase(object):
         :param epsilon:
         :param kwargs: other arguments.
         """
-        self.env = gym.make(env_name)
+        super(FABase, self).__init__(env_name, num_episodes, alpha, gamma, policy, epsilon=epsilon, **kwargs)
 
         if not isinstance(self.env.action_space, gym.spaces.Discrete) or \
                 not isinstance(self.env.observation_space, gym.spaces.Box):
@@ -29,17 +31,8 @@ class FABase(object):
         self.obs_shape = self.env.observation_space.shape
         self.obs_size = reduce(lambda x, y: x * y, self.obs_shape)
         self.action_size = self.env.action_space.n
-        self.num_episodes = num_episodes
-        self.alpha = alpha
-        self.gamma = gamma
-        self.epsilon = epsilon
-        self.state = None
-        self._rewards = None
-        self._weight = None
-        self._policy = policy
         self._feature = torch.Tensor(self.action_size, self.obs_size)
-        for k, v in kwargs.items():
-            setattr(self, str(k), v)
+        self._weight = None
 
     def app_q(self, state, action: int):
         """
@@ -51,13 +44,6 @@ class FABase(object):
 
         return self.weight @ self.feature(state, action)
 
-    def policy(self) -> int:
-        """
-        epsilon greedy method
-        :return: action (int)
-        """
-        return getattr(self, self._policy)
-
     @property
     def epsilon_greedy(self) -> int:
         _epsilon = self.epsilon * (1 - 1 / self.action_size)
@@ -66,35 +52,6 @@ class FABase(object):
         else:
             action = random.randrange(0, self.action_size)
         return action
-
-    def _loop(self):
-        """
-        Loop in an episode. You need to implement.
-        :return: total_reward (list)
-        """
-        raise NotImplementedError
-
-    def schedule_alpha(self, episode):
-        """
-        schedule learning rate, this is optional
-        :param episode:
-        :return:
-        """
-        pass
-
-    def train(self):
-        """
-        training the model
-        """
-        total_reward_list = []
-        for episode in range(self.num_episodes):
-            self.schedule_alpha(episode)
-            total_reward = self._loop()
-            total_reward_list.append(total_reward)
-
-            if episode % 100 == 0:
-                print(f"episode:{episode} total reward:{total_reward:.2f}")
-        self._rewards = total_reward_list
 
     def test(self, render=False, interval=0.1):
         """
@@ -115,8 +72,6 @@ class FABase(object):
             counter += 1
         print(f"total reward {total_reward} in {counter} steps")
 
-    __call__ = train
-
     @property
     def weight(self):
         if self._weight is None:
@@ -134,17 +89,3 @@ class FABase(object):
         self._feature.zero_()
         self._feature[action] = to_tensor(state).float()
         return self._feature.view(-1)
-
-    @property
-    def rewards(self):
-        """
-        get reward list
-        """
-        return self._rewards
-
-    @staticmethod
-    def argmax(x):
-        if isinstance(x, Tensor):
-            return x.max(dim=0)[1][0]
-        elif isinstance(x, list):
-            return x.index(max(x))

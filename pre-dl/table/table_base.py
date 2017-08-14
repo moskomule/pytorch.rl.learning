@@ -1,9 +1,11 @@
+from base import Base
+
 import gym
 import torch
 import random
 
 
-class TableBase(object):
+class TableBase(Base):
     def __init__(self, env_name, num_episodes, alpha, gamma, epsilon, policy, **kwargs):
         """
         base class for RL using lookup table
@@ -15,7 +17,7 @@ class TableBase(object):
         :param epsilon:
         :param kwargs: other arguments.
         """
-        self.env = gym.make(env_name)
+        super(TableBase, self).__init__(env_name, num_episodes, alpha, gamma, policy, epsilon=epsilon, **kwargs)
 
         if not isinstance(self.env.action_space, gym.spaces.Discrete) or \
                 not isinstance(self.env.observation_space, gym.spaces.Discrete):
@@ -24,22 +26,6 @@ class TableBase(object):
         self.obs_size = self.env.observation_space.n
         self.action_size = self.env.action_space.n
         self.q_table = torch.zeros(self.obs_size, self.action_size)
-        self.num_episodes = num_episodes
-        self.alpha = alpha
-        self.gamma = gamma
-        self.epsilon = epsilon
-        self.state = None
-        self._rewards = None
-        self._policy = policy
-        for k, v in kwargs.items():
-            setattr(self, str(k), v)
-
-    def policy(self) -> int:
-        """
-        epsilon greedy method
-        :return: action (int)
-        """
-        return getattr(self, self._policy)
 
     @property
     def epsilon_greedy(self) -> int:
@@ -53,26 +39,6 @@ class TableBase(object):
         else:
             action = random.randrange(0, self.action_size)
         return action
-
-    def _loop(self):
-        """
-        Loop in an episode. You need to implement.
-        :return: total_reward (list)
-        """
-        raise NotImplementedError
-
-    def train(self):
-        """
-        training the model
-        """
-        total_reward_list = []
-        for episode in range(self.num_episodes):
-            total_reward = self._loop()
-            total_reward_list.append(total_reward)
-
-            if episode % 100 == 0:
-                print(f"episode:{episode} total reward:{total_reward:.2f}")
-        self._rewards = total_reward_list
 
     def test(self, init_state=-1):
         """
@@ -89,13 +55,3 @@ class TableBase(object):
             total_reward += reward
             counter += 1
         print(f"total reward {total_reward} in {counter} steps")
-
-    __call__ = train
-
-    @property
-    def rewards(self):
-        return self._rewards
-
-    @staticmethod
-    def argmax(x: torch.Tensor):
-        return x.max(dim=0)[1][0]

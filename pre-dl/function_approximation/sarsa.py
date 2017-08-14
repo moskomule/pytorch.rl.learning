@@ -1,10 +1,11 @@
-from function_approximation.base import FABase
+from function_approximation.fa_base import FABase
 import matplotlib.pyplot as plt
 
 
 class Sarsa(FABase):
     def __init__(self, env_name, num_episodes=50000, alpha=0.9, gamma=0.9, epsilon=1e-1, min_alpha=1e-3):
-        super(Sarsa, self).__init__(env_name, num_episodes, alpha, gamma, epsilon, min_alpha=min_alpha)
+        super(Sarsa, self).__init__(env_name, num_episodes, alpha, gamma, epsilon, policy="epsilon_greedy",
+                                    min_alpha=min_alpha)
 
     def _loop(self):
         done = False
@@ -34,12 +35,12 @@ def main(plot=True, env_name='CartPole-v0'):
 
     # training
     sarsa()
-
-    plt.plot(sarsa.rewards)
-    plt.show()
-    sarsa.test(render=True)
-    sarsa.test()
-    sarsa.test()
+    if plot:
+        plt.plot(sarsa.rewards)
+        plt.show()
+        sarsa.test(render=True)
+        sarsa.test()
+        sarsa.test()
 
 
 if __name__ == '__main__':
