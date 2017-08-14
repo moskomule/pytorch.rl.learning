@@ -1,16 +1,17 @@
 from torch import Tensor
-from table.base import TableRLBase
+from table.base import TableBase
 
 
-class NstepSarsa(TableRLBase):
+class NstepSarsa(TableBase):
     def __init__(self, env_name, n_steps, num_episodes=5000, alpha=0.9, gamma=0.9, epsilon=1e-2):
-        super(NstepSarsa, self).__init__(env_name, num_episodes, alpha, gamma, epsilon, n_steps=n_steps)
+        super(NstepSarsa, self).__init__(env_name, num_episodes, alpha, gamma, epsilon, n_steps=n_steps,
+                                         policy="epsilon_greedy")
 
     def _loop(self):
         done = False
         total_reward, reward = 0, 0
         self.state = self.env.reset()
-        action = self.epsilon_greedy()
+        action = self.policy()
         while not done:
             # n = 1 (same as SARSA)
             _state, reward, done, _ = self.env.step(action)

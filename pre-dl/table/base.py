@@ -3,8 +3,8 @@ import torch
 import random
 
 
-class TableRLBase(object):
-    def __init__(self, env_name, num_episodes, alpha, gamma, epsilon, **kwargs):
+class TableBase(object):
+    def __init__(self, env_name, num_episodes, alpha, gamma, epsilon, policy, **kwargs):
         """
         base class for RL using lookup table
         :param env_name: name of environment, currently environments whose observation space and action space are
@@ -30,10 +30,19 @@ class TableRLBase(object):
         self.epsilon = epsilon
         self.state = None
         self._rewards = None
+        self._policy = policy
         for k, v in kwargs.items():
             setattr(self, str(k), v)
 
-    def epsilon_greedy(self):
+    def policy(self) -> int:
+        """
+        epsilon greedy method
+        :return: action (int)
+        """
+        return getattr(self, self._policy)
+
+    @property
+    def epsilon_greedy(self) -> int:
         """
         epsilon greedy method
         :return: action (int)

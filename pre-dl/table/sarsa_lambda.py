@@ -1,10 +1,11 @@
 from torch import Tensor
-from table.base import TableRLBase
+from table.base import TableBase
 
 
-class SarsaLambda(TableRLBase):
+class SarsaLambda(TableBase):
     def __init__(self, env_name, num_episodes=5000, alpha=0.9, gamma=0.9, epsilon=1e-2, lambd=0.1):
-        super(SarsaLambda, self).__init__(env_name, num_episodes, alpha, gamma, epsilon, lambd=lambd)
+        super(SarsaLambda, self).__init__(env_name, num_episodes, alpha, gamma, epsilon, policy="epsilon_greedy",
+                                          lambd=lambd)
         self.e_table = self.q_table.clone()
 
     def _loop(self):
@@ -12,7 +13,7 @@ class SarsaLambda(TableRLBase):
         total_reward, reward = 0, 0
         self.state = self.env.reset()
         self.e_table.zero_()
-        action = self.epsilon_greedy()
+        action = self.policy()
         while not done:
             _state, reward, done, _ = self.env.step(action)
             _action = self.argmax(self.q_table[_state])

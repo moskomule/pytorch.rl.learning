@@ -10,7 +10,7 @@ class Sarsa(FABase):
         done = False
         total_reward, reward = 0, 0
         self.state = self.env.reset()
-        action = self.epsilon_greedy()
+        action = self.policy()
         while not done:
             _state, reward, done, _ = self.env.step(action)
             _action = self.argmax([self.app_q(_state, a) for a in range(self.action_size)])
@@ -30,15 +30,14 @@ class Sarsa(FABase):
 
 def main(plot=True, env_name='CartPole-v0'):
     print("start training")
-    sarsa = Sarsa(env_name)
+    sarsa = Sarsa(env_name, num_episodes=int(1e5))
 
     # training
     sarsa()
 
     plt.plot(sarsa.rewards)
-    plt.legend()
     plt.show()
-    sarsa.test()
+    sarsa.test(render=True)
     sarsa.test()
     sarsa.test()
 

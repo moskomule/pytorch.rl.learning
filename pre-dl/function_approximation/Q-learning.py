@@ -10,7 +10,7 @@ class QLearning(FABase):
         done = False
         total_reward, reward = 0, 0
         self.state = self.env.reset()
-        action = self.epsilon_greedy()
+        action = self.policy()
         while not done:
             _state, reward, done, _ = self.env.step(action)
             q = self.app_q(self.state, action)

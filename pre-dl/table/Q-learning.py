@@ -2,19 +2,19 @@
 inspired by https://www.oreilly.com/learning/introduction-to-reinforcement-learning-and-openai-gym
 """
 
-from table.base import TableRLBase
+from table.base import TableBase
 
 
-class QLearing(TableRLBase):
+class QLearing(TableBase):
     def __init__(self, env_name, num_episodes=5000, alpha=0.9, gamma=0.9, epsilon=1e-2):
-        super(QLearing, self).__init__(env_name, num_episodes, alpha, gamma, epsilon)
+        super(QLearing, self).__init__(env_name, num_episodes, alpha, gamma, epsilon, policy="epsilon_greedy")
 
     def _loop(self):
         done = False
         total_reward, reward = 0, 0
         self.state = self.env.reset()
         while not done:
-            action = self.epsilon_greedy()
+            action = self.policy()
 
             _state, reward, done, _ = self.env.step(action)
             self.q_table[self.state, action] += self.alpha * (

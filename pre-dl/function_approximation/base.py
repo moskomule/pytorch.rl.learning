@@ -8,7 +8,7 @@ from time import sleep
 
 
 class FABase(object):
-    def __init__(self, env_name, num_episodes, alpha, gamma, epsilon, **kwargs):
+    def __init__(self, env_name, num_episodes, alpha, gamma, epsilon, policy, **kwargs):
         """
         base class for RL using lookup table
         :param env_name: name of environment, currently environments whose observation space is Box and action space is
@@ -23,7 +23,8 @@ class FABase(object):
 
         if not isinstance(self.env.action_space, gym.spaces.Discrete) or \
                 not isinstance(self.env.observation_space, gym.spaces.Box):
-            raise NotImplementedError("action_space and observation_space should be Discrete")
+            raise NotImplementedError("action_space should be discrete and "
+                                      "observation_space should be box")
 
         self.obs_shape = self.env.observation_space.shape
         self.obs_size = reduce(lambda x, y: x * y, self.obs_shape)
@@ -35,6 +36,7 @@ class FABase(object):
         self.state = None
         self._rewards = None
         self._weight = None
+        self._policy = policy
         self._feature = torch.Tensor(self.action_size, self.obs_size)
         for k, v in kwargs.items():
             setattr(self, str(k), v)
@@ -49,11 +51,15 @@ class FABase(object):
 
         return self.weight @ self.feature(state, action)
 
-    def epsilon_greedy(self):
+    def policy(self) -> int:
         """
         epsilon greedy method
         :return: action (int)
         """
+        return getattr(self, self._policy)
+
+    @property
+    def epsilon_greedy(self) -> int:
         _epsilon = self.epsilon * (1 - 1 / self.action_size)
         if random.random() > _epsilon:
             action = self.argmax([self.app_q(self.state, a) for a in range(self.action_size)])
@@ -131,6 +137,9 @@ class FABase(object):
 
     @property
     def rewards(self):
+        """
+        get reward list
+        """
         return self._rewards
 
     @staticmethod

@@ -1,16 +1,16 @@
-from table.base import TableRLBase
+from table.base import TableBase
 import matplotlib.pyplot as plt
 
 
-class Sarsa(TableRLBase):
+class Sarsa(TableBase):
     def __init__(self, env_name, num_episodes=5000, alpha=0.9, gamma=0.9, epsilon=1e-2):
-        super(Sarsa, self).__init__(env_name, num_episodes, alpha, gamma, epsilon)
+        super(Sarsa, self).__init__(env_name, num_episodes, alpha, gamma, epsilon, policy="epsilon_greedy")
 
     def _loop(self):
         done = False
         total_reward, reward = 0, 0
         self.state = self.env.reset()
-        action = self.epsilon_greedy()
+        action = self.policy()
         while not done:
             _state, reward, done, _ = self.env.step(action)
             _action = self.argmax(self.q_table[_state])
