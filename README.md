@@ -13,13 +13,22 @@ This repository is for learning *reinforcement learning* using PyTorch.
     + Q-learning
     + SARSA
 * policy gradient
-    + simple gaussian policy
+    + REINFORCE
+    + REINFORCE with baseline
     + actor critic
 
 # Dependency
 
-* gym
-* PyTorch
+* [gym](https://gym.openai.com/)
+
+```
+git clone https://github.com/openai/gym
+cd gym
+pip install -e . # minimal install
+```
+
+* [PyTorch](http://pytorch.org/)
+* matplotlib
 
 # References
 
@@ -27,7 +36,7 @@ This repository is for learning *reinforcement learning* using PyTorch.
     * I mainly learned RL in this lecture.
     * Lecture videos are available on [YouTube](https://www.youtube.com/watch?v=2pWv7GOvuf0)
 
-+ Richard S. Sutton and Andrew G. BartoReinforcement Learning: An Introduction. 2017.
++ Richard S. Sutton and Andrew G. Barto Reinforcement Learning: An Introduction. 2017.
     * online draft is [available](http://incompleteideas.net/sutton/book/the-book-2nd.html)
 
 + 牧野貴樹ほか.これからの強化学習.2016.

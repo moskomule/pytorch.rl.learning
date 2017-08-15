@@ -10,11 +10,12 @@ class RLBase(object):
     def __init__(self, env_name, num_episodes, alpha, gamma, policy, report_freq=100, **kwargs):
         """
         base class for RL using lookup table
-        :param env_name: name of environment, currently environments whose observation space and action space are
-        both Discrete are supported. see https://github.com/openai/gym/wiki/Table-of-environments
-        :param num_episodes: number of episode for training
-        :param alpha:
-        :param gamma:
+        :param env_name: see https://github.com/openai/gym/wiki/Table-of-environments
+        :param num_episodes: int, number of episode for training
+        :param alpha: float
+        :param gamma: float
+        :param policy: str
+        :param report_freq: int
         :param kwargs: other arguments.
         """
         self.env = gym.make(env_name)
@@ -60,7 +61,7 @@ class RLBase(object):
             total_reward_list.append(total_reward)
 
             if episode % self.report_freq == 0:
-                print(f"episode:{episode} total reward:{total_reward:.2f}")
+                print(f"episode:{episode:>5} total reward:{total_reward:>5.2f}")
         self._rewards = total_reward_list
 
     def test(self, init_state=-1):

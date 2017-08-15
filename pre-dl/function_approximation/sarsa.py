@@ -38,9 +38,9 @@ def main(plot=True, env_name='CartPole-v0'):
     if plot:
         plt.plot(sarsa.rewards)
         plt.show()
-        sarsa.test(render=True)
-        sarsa.test()
-        sarsa.test()
+    sarsa.test()
+    sarsa.test()
+    sarsa.test()
 
 
 if __name__ == '__main__':
