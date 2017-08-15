@@ -1,17 +1,20 @@
-This repository is for learning * reinforcement learning * using PyTorch.
+This repository is for learning *reinforcement learning* using PyTorch.
 
 # Contents
 ## pre-dl
 
 [pre-dl](./pre-dl) contains some algorithms before Deep Learning era.
-* using lookup table
+* lookup table
     + Q-Learning
     + SARSA
         - n-step SARSA
         - SARSA(λ)
-* using function approximation
+* function approximation
     + Q-learning
     + SARSA
+* policy gradient
+    + simple gaussian policy
+    + actor critic
 
 # Dependency
 
@@ -28,3 +31,4 @@ Richard S. Sutton and Andrew G. BartoReinforcement Learning: An Introduction. 20
 * online draft is [available](http://incompleteideas.net/sutton/book/the-book-2nd.html)
 
 牧野貴樹ほか.これからの強化学習.2016.
+* 日本語書籍の中では基礎から応用まで扱っています．
