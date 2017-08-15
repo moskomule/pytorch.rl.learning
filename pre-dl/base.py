@@ -12,11 +12,11 @@ class RLBase(object):
         base class for RL using lookup table
         :param env_name: see https://github.com/openai/gym/wiki/Table-of-environments
         :param num_episodes: int, number of episode for training
-        :param alpha: float
-        :param gamma: float
+        :param alpha: float, learning rate
+        :param gamma: float, discount rate
         :param policy: str
-        :param report_freq: int
-        :param kwargs: other arguments.
+        :param report_freq: int, by default 100
+        :param kwargs: other arguments
         """
         self.env = gym.make(env_name)
         self.num_episodes = num_episodes

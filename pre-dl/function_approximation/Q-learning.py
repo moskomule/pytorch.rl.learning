@@ -3,9 +3,10 @@ import matplotlib.pyplot as plt
 
 
 class QLearning(FABase):
-    def __init__(self, env_name, num_episodes=50000, alpha=0.9, gamma=0.9, epsilon=1e-1, min_alpha=1e-3):
+    def __init__(self, env_name, num_episodes=50000, alpha=0.9, gamma=0.9, epsilon=1e-1, min_alpha=1e-3,
+                 decay_freq=1000):
         super(QLearning, self).__init__(env_name, num_episodes, alpha, gamma, epsilon, policy="epsilon_greedy",
-                                        min_alpha=min_alpha)
+                                        min_alpha=min_alpha, decay_freq=decay_freq)
 
     def _loop(self):
         done = False
@@ -23,8 +24,8 @@ class QLearning(FABase):
         return total_reward
 
     def schedule_alpha(self, episode):
-        if self.alpha > self.min_alpha and episode % 1000 == 0 and episode != 0:
-            self.alpha = self.alpha / (episode / 1000)
+        if self.alpha > self.min_alpha and episode % self.decay_freq == 0 and episode != 0:
+            self.alpha = self.alpha / (episode / self.decay_freq)
 
 
 def main(plot=True, env_name='CartPole-v0'):

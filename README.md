@@ -3,7 +3,7 @@ This repository is for learning *reinforcement learning* using PyTorch.
 # Contents
 ## pre-dl
 
-[pre-dl](./pre-dl) contains some algorithms before Deep Learning era. Here, PyTorch is just numpy-alternative.
+[pre-dl](./pre-dl) contains some algorithms without Deep Learning. Here, PyTorch is just numpy-alternative.
 * lookup table
     + Q-Learning
     + SARSA
@@ -15,7 +15,10 @@ This repository is for learning *reinforcement learning* using PyTorch.
 * policy gradient
     + REINFORCE
     + REINFORCE with baseline
-    + actor critic
+    + actor-critic
+
+[dl](./dl) contains some algorithms using DL.
+* No Contents
 
 # Dependency
 
@@ -40,4 +43,4 @@ pip install -e . # minimal install
     * online draft is [available](http://incompleteideas.net/sutton/book/the-book-2nd.html)
 
 + 牧野貴樹ほか.これからの強化学習.2016.
-    * 日本語書籍の中では基礎から応用まで扱っています．
+    * 基礎から応用まで扱っています

@@ -1,11 +1,27 @@
-from base import RLBase
 from functools import reduce
 from time import sleep
+import gym
+
+from base import RLBase
 
 
 class PGBase(RLBase):
     def __init__(self, env_name, num_episodes, alpha, gamma, policy, **kwargs):
+        """
+        base class for RL using policy gradient
+        :param env_name: name of environment, currently environments whose observation space is Box and action space is
+         Discrete are supported. see https://github.com/openai/gym/wiki/Table-of-environments
+        :param num_episodes:
+        :param alpha:
+        :param gamma:
+        :param policy:
+        :param kwargs:
+        """
         super(PGBase, self).__init__(env_name, num_episodes, alpha, gamma, policy, **kwargs)
+        if not isinstance(self.env.action_space, gym.spaces.Discrete) or \
+                not isinstance(self.env.observation_space, gym.spaces.Box):
+            raise NotImplementedError("action_space should be discrete and "
+                                      "observation_space should be box")
         self.obs_shape = self.env.observation_space.shape
         self.obs_size = reduce(lambda x, y: x * y, self.obs_shape)
         self.action_size = self.env.action_space.n

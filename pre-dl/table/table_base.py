@@ -1,8 +1,8 @@
-from base import RLBase
-
 import gym
 import torch
 import random
+
+from base import RLBase
 
 
 class TableBase(RLBase):

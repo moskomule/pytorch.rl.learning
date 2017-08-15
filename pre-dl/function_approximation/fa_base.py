@@ -1,5 +1,3 @@
-from base import RLBase
-
 import gym
 import torch
 from torch import Tensor
@@ -7,6 +5,8 @@ from torch import from_numpy as to_tensor
 import random
 from functools import reduce
 from time import sleep
+
+from base import RLBase
 
 
 class FABase(RLBase):

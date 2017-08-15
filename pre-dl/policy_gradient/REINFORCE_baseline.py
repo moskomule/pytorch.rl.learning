@@ -9,9 +9,7 @@ class RFBaseline(REINFORCE):
     def __init__(self, env_name, num_episodes=10000, alpha=0.9, gamma=0.9, beta=0.1):
         super(RFBaseline, self).__init__(env_name, num_episodes, alpha, gamma)
         self.beta = beta
-        self._feature = Tensor(self.action_size, self.obs_size)
-        self._baseline_weight = None
-        self.actions = range(self.action_size)
+        self._state_value_weight = None
 
     def _loop(self):
         done = False
@@ -25,7 +23,7 @@ class RFBaseline(REINFORCE):
             # \pi(a) = x^{\top}(a)w, where x is feature and w is weight
             # \nabla\ln\pi(a) = x(a)\sum_b \pi(b)x(b)
             delta = reward - self.state_value(_state)
-            self.baseline_weight += self.beta * delta * to_tensor(_state).float()
+            self.state_value_weight += self.beta * delta * to_tensor(_state).float()
             direction = self.feature(_state, action) - sum(
                 [self.softmax @ torch.cat([self.feature(_state, a).unsqueeze(0) for a in self.actions])])
             weight += self.alpha * pow(self.gamma, iter) * delta * direction
@@ -35,32 +33,24 @@ class RFBaseline(REINFORCE):
         self.weight = weight
         return total_reward
 
-    def _initialize_weight(self):
-        return Tensor(self.obs_size * self.action_size).normal_(0, 1)
-
-    def feature(self, state, action):
-        self._feature.zero_()
-        self._feature[action] = to_tensor(state).float()
-        return self._feature.view(-1)
-
     @property
-    def baseline_weight(self):
-        if self._baseline_weight is None:
-            self._baseline_weight = torch.zeros(self.obs_size)
-        return self._baseline_weight
+    def state_value_weight(self):
+        if self._state_value_weight is None:
+            self._state_value_weight = torch.zeros(self.obs_size)
+        return self._state_value_weight
 
-    @baseline_weight.setter
-    def baseline_weight(self, x):
-        self._baseline_weight = x
+    @state_value_weight.setter
+    def state_value_weight(self, x):
+        self._state_value_weight = x
 
     def state_value(self, state):
         state = to_tensor(state).float()
-        return state @ self.baseline_weight
+        return state @ self.state_value_weight
 
 
 def main(plot=True, env_name='CartPole-v0'):
     print("start training")
-    rf = RFBaseline(env_name, num_episodes=int(1e5))
+    rf = RFBaseline(env_name, num_episodes=int(5e5))
 
     # training
     rf()
