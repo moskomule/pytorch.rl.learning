@@ -1,5 +1,6 @@
-from table.table_base import TableBase
 import matplotlib.pyplot as plt
+
+from table.table_base import TableBase
 
 
 class Sarsa(TableBase):

@@ -1,5 +1,6 @@
 from torch import Tensor
-from table.base import TableBase
+
+from table.table_base import TableBase
 
 
 class SarsaLambda(TableBase):

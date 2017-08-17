@@ -1,12 +1,11 @@
-from policy_gradient.REINFORCE import REINFORCE
-
 import torch
-from torch import Tensor
 from torch import from_numpy as to_tensor
+
+from policy_gradient.REINFORCE import REINFORCE
 
 
 class RFBaseline(REINFORCE):
-    def __init__(self, env_name, num_episodes=10000, alpha=0.9, gamma=0.9, beta=0.1):
+    def __init__(self, env_name, num_episodes=10000, alpha=0.9, beta=0.1, gamma=0.9):
         super(RFBaseline, self).__init__(env_name, num_episodes, alpha, gamma)
         self.beta = beta
         self._state_value_weight = None

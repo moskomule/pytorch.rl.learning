@@ -2,11 +2,18 @@ from random import choices
 import torch
 from torch import Tensor
 from torch import from_numpy as to_tensor
+
 from policy_gradient.pg_base import PGBase
 
 
 class ActorCritic(PGBase):
-    def __init__(self, env_name, num_episodes=10000, alpha=0.9, gamma=0.9, beta=0.1):
+    def __init__(self, env_name, num_episodes=10000, alpha=0.9, beta=0.1, gamma=0.9):
+        """
+        Actor Critic Algorithm using softmax policy
+        :param alpha: learning rate for actor
+        :param beta: learning rate for critic
+        :param gamma: discount rate
+        """
         super(ActorCritic, self).__init__(env_name, num_episodes, alpha, gamma, policy="softmax_policy",
                                           report_freq=500, beta=beta)
         self._feature = Tensor(self.action_size, self.obs_size)
@@ -56,6 +63,7 @@ class ActorCritic(PGBase):
         action = choices(list(range(self.action_size)), weights=self.softmax)[0]
         return action
 
+    # actor
     def _initialize_weight(self):
         return Tensor(self.obs_size * self.action_size).normal_(0, 1)
 
@@ -64,10 +72,11 @@ class ActorCritic(PGBase):
         self._feature[action] = to_tensor(state).float()
         return self._feature.view(-1)
 
+    # critic
     @property
     def state_value_weight(self):
         if self._state_value_weight is None:
-            self._state_value_weight = torch.zeros(self.obs_size)
+            self._state_value_weight = torch.Tensor(self.obs_size).normal_(0, 1)
         return self._state_value_weight
 
     @state_value_weight.setter

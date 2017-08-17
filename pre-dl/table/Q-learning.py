@@ -1,8 +1,4 @@
-"""
-inspired by https://www.oreilly.com/learning/introduction-to-reinforcement-learning-and-openai-gym
-"""
-
-from table.base import TableBase
+from table.table_base import TableBase
 
 
 class QLearing(TableBase):
