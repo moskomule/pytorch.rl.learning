@@ -9,6 +9,8 @@ This repository is for learning *reinforcement learning* using PyTorch.
     + SARSA
         - n-step SARSA
         - SARSA(λ)
+    + DynaQ (Model Free Approach)
+
 * function approximation
     + Q-learning
     + SARSA
@@ -41,6 +43,9 @@ pip install -e . # minimal install
 
 + Richard S. Sutton and Andrew G. Barto Reinforcement Learning: An Introduction. 2017.
     * online draft is [available](http://incompleteideas.net/sutton/book/the-book-2nd.html)
+
++ [Introduction to reinforcement learning and OpenAI Gym](https://www.oreilly.com/learning/introduction-to-reinforcement-learning-and-openai-gym) by Justin Francis
+    * Good introduction to OpenAI Gym
 
 + 牧野貴樹ほか.これからの強化学習.2016.
     * 基礎から応用まで扱っています
