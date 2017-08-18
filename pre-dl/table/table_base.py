@@ -55,3 +55,40 @@ class TableBase(RLBase):
         else:
             action = random.randrange(0, self.action_size)
         return action
+
+
+class Array2D(object):
+    def __init__(self, row, column):
+        self._index = []
+        self._array = [[None for _ in range(column)] for _ in range(row)]
+
+    def __getitem__(self, key):
+        if key not in self._index:
+            raise ValueError(f"No value in {key}")
+        row, column = key
+        return self._array[row][column]
+
+    def __setitem__(self, key, val):
+        if key not in self._index:
+            self._index.append(key)
+        row, column = key
+        self._array[row][column] = val
+
+    def sample(self):
+        return self[random.choice(self._index)]
+
+    def __repr__(self):
+        s = [str(row) for row in self._array]
+        return "_2DArray:[\n" + "\n".join(s) + "]"
+
+
+class History(object):
+    def __init__(self):
+        self._container = []
+
+    def __call__(self, val):
+        if val not in self._container:
+            self._container.append(val)
+
+    def sample(self):
+        return random.choice(self._container)
