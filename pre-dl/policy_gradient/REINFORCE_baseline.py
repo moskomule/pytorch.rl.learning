@@ -49,7 +49,7 @@ class RFBaseline(REINFORCE):
 
 def main(plot=True, env_name='CartPole-v0'):
     print("start training")
-    rf = RFBaseline(env_name, num_episodes=int(5e5))
+    rf = RFBaseline(env_name)
 
     # training
     rf()
