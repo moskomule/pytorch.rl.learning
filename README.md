@@ -19,6 +19,8 @@ This repository is for learning *reinforcement learning* using PyTorch.
     + REINFORCE with baseline
     + actor-critic
 
+For simplicity, each algorithms inherit `FooBase` in `pre-dl/foo/foo_base.py` which inherits `RLBase` in `pre-dl/base.py`.
+
 [dl](./dl) contains some algorithms using DL.
 * No Contents
 

@@ -80,15 +80,3 @@ class Array2D(object):
     def __repr__(self):
         s = [str(row) for row in self._array]
         return "_2DArray:[\n" + "\n".join(s) + "]"
-
-
-class History(object):
-    def __init__(self):
-        self._container = []
-
-    def __call__(self, val):
-        if val not in self._container:
-            self._container.append(val)
-
-    def sample(self):
-        return random.choice(self._container)

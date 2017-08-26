@@ -1,3 +1,4 @@
+from random import choice
 import gym
 from torch import Tensor
 
@@ -83,3 +84,24 @@ class RLBase(object):
             return x.max(dim=0)[1][0]
         elif isinstance(x, list):
             return x.index(max(x))
+
+
+class Memory(object):
+    def __init__(self, max_size=None):
+        self._container = ()
+        self.max_size = max_size
+
+    def __call__(self, val):
+        if self.max_size is not None and len(self._container) == self.max_size:
+            self._container = self._container[1:]
+        self._container += (val,)
+
+    def __repr__(self):
+        return str(self._container)
+
+    def sample(self):
+        return choice(self._container)
+
+    @property
+    def is_empty(self):
+        return len(self._container) == 0

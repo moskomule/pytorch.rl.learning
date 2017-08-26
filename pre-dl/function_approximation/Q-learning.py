@@ -4,7 +4,7 @@ from function_approximation.fa_base import FABase
 
 
 class QLearning(FABase):
-    def __init__(self, env_name, num_episodes=50000, alpha=0.9, gamma=0.9, epsilon=1e-1, min_alpha=1e-3,
+    def __init__(self, env_name, num_episodes=50000, alpha=0.9, gamma=0.9, epsilon=0.9, min_alpha=1e-3,
                  decay_freq=1000):
         super(QLearning, self).__init__(env_name, num_episodes, alpha, gamma, epsilon, policy="epsilon_greedy",
                                         min_alpha=min_alpha, decay_freq=decay_freq)
@@ -31,7 +31,7 @@ class QLearning(FABase):
 
 def main(plot=True, env_name='CartPole-v0'):
     print("start training")
-    ql = QLearning(env_name)
+    ql = QLearning(env_name, epsilon=1e-2)
 
     # training
     ql()

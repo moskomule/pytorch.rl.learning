@@ -1,4 +1,5 @@
-from table.table_base import TableBase, Array2D, History
+from base import Memory
+from table.table_base import TableBase, Array2D
 
 
 class DynaQ(TableBase):
@@ -10,7 +11,7 @@ class DynaQ(TableBase):
         super(DynaQ, self).__init__(env_name, num_episodes, alpha, gamma, epsilon, policy="epsilon_greedy",
                                     model_loop=model_loop, min_alpha=min_alpha, decay_freq=decay_freq)
         self.m_table = Array2D(self.obs_size, self.action_size)
-        self._history = History()
+        self._history = Memory()
 
     def _loop(self):
         done = False
