@@ -1,6 +1,7 @@
+from math import sqrt
 from collections import namedtuple
 from random import random, randrange
-from logging import getLogger, Formatter, StreamHandler, DEBUG
+from logging import getLogger, Formatter, StreamHandler, FileHandler, INFO
 
 import numpy as np
 import torch
@@ -14,11 +15,12 @@ from dl.utils import convert_env, Memory
 
 Transition = namedtuple("Transition", ["state_b", "action", "reward", "state_a", "done"])
 logger = getLogger(__name__)
-formatter = Formatter("[%(asctime)s-%(name)s] %(message)s")
-_stream_handler = StreamHandler()
-_stream_handler.setFormatter(formatter)
-logger.addHandler(_stream_handler)
-logger.setLevel(DEBUG)
+logger.setLevel(INFO)
+# stream_handler = StreamHandler()
+file_handler = FileHandler("dqn.log")
+file_handler.setLevel(0)
+# logger.addHandler(stream_handler)
+logger.addHandler(file_handler)
 
 
 class DQN(nn.Module):
@@ -38,6 +40,14 @@ class DQN(nn.Module):
                 nn.ReLU(inplace=True))
         self.fc = nn.Linear(64 * 7 * 7, 512)
         self.output = nn.Linear(512, output_size)
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, sqrt(2. / n))
+            elif isinstance(m, nn.Linear):
+                m.weight.data.uniform_()
+                m.bias.data.zero_()
 
     def forward(self, x):
         x = self.feature(x)
@@ -60,13 +70,13 @@ class Agent(object):
         self.action_size = self.env.action_space.n
         self.net = network(self.action_size)
         self.target_net = network(self.action_size)
-        self.update_target_net()
         self.gamma = gamma
         self._epsilon = epsilon
         self.epsilon = epsilon
         self._final_epsilon = final_epsilon
         self._final_exp_step = final_exp_step
         self._step_counter = 0
+        self.update_target_net()
 
     def policy(self, state):
         """
@@ -77,6 +87,7 @@ class Agent(object):
         else:
             state = Variable(torch.from_numpy(np.array(state))).unsqueeze(dim=0)
             action = self.net(state).data.view(-1).max(dim=0)[1].sum()
+        logger.debug(f"action: {action}")
         return action
 
     def parameter_scheduler(self):
@@ -84,17 +95,22 @@ class Agent(object):
         if self._step_counter < self._final_exp_step:
             self.epsilon = self._step_counter * (
                 self._final_epsilon - self._epsilon) / self._final_exp_step + self._epsilon
+        logger.debug(f"ε: {self.epsilon:.2f}")
 
     def update_target_net(self):
-        logger.info("updated traget network")
         self.target_net.load_state_dict(self.net.state_dict())
+        logger.debug("updated traget network")
 
     def estimate_value(self, reward, state, done):
         q_hat = self.target_net(state).max(dim=1)[0]
-        return reward + self.gamma * done * q_hat
+        estim = reward + self.gamma * done * q_hat
+        logger.debug(f"reward[0: 3]: {reward[0: 3]}")
+        logger.debug(f"done[0: 3]: {done[0: 3]}")
+        logger.debug(f"q_hat[0: 3]: {estim[0: 3]}")
+        return estim
 
     def q_value(self, state, action):
-        return self.net(state).gather(1, Variable(action.squeeze(dim=1)))
+        return self.net(state).gather(1, Variable(action.unsqueeze(dim=1)))
 
     def test(self):
         done = False
@@ -142,6 +158,7 @@ class Trainer(object):
         return loss.data[0]
 
     def train(self, episode):
+        logger.info("start training!")
         for ep in range(episode):
             done = False
             state_b = self.env.reset()
@@ -159,9 +176,8 @@ class Trainer(object):
                 train_reward.append(reward)
                 self.agent.parameter_scheduler()
 
-                if self._step % 100 == 0:
-                    logger.info(f"step: {self._step}/{np.mean(train_loss):.2f}/{np.mean(train_reward):.2f}")
-                    logger.debug(f">>ε:{self.agent.epsilon:.2f}")
+            logger.info(
+                    f"ep: {ep}/step: {self._step}/loss: {np.mean(train_loss):.2f}/reward{np.mean(train_reward):.2f}")
 
     def get_batch(self):
         batch = self.memory.sample(self.batch_size)
@@ -171,14 +187,15 @@ class Trainer(object):
         batch_reward = Variable(torch.Tensor([m.reward for m in batch]))
         batch_state_a = Variable(
                 torch.cat([torch.from_numpy(np.array(m.state_a)).unsqueeze(0) / 255 for m in batch], dim=0))
-        batch_done = Variable(torch.Tensor([m.done for m in batch]))
+        # tensor 0 if done else 1
+        batch_done = Variable(1 - torch.Tensor([m.done for m in batch]))
         return batch_state_b, batch_action, batch_reward, batch_state_a, batch_done
 
 
 def main():
     env = convert_env(gym.make("Pong-v0"))
-    agent = Agent(env, DQN, 0.99, 1, 0.1, 1_000_000)
-    trainer = Trainer(agent, 2.5e-4, 1_000_000, 100_000, 32, 50_000)
+    agent = Agent(env, DQN, 0.99, 1, 0.1, 100_000)
+    trainer = Trainer(agent, 2.5e-4, 100_000, 10_000, 32, 5_000)
     trainer.train(1000)
     torch.save(trainer.agent.net.state_dict(),
                "dqn.wt")
