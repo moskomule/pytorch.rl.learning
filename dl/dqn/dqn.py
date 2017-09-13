@@ -1,6 +1,6 @@
 from collections import namedtuple
 from random import random, randrange
-import logging
+from logging import getLogger, Formatter, StreamHandler, DEBUG
 
 import numpy as np
 import torch
@@ -13,6 +13,12 @@ from tqdm import tqdm
 from dl.utils import convert_env, Memory
 
 Transition = namedtuple("Transition", ["state_b", "action", "reward", "state_a", "done"])
+logger = getLogger(__name__)
+formatter = Formatter("[%(asctime)s-%(name)s] %(message)s")
+_stream_handler = StreamHandler()
+_stream_handler.setFormatter(formatter)
+logger.addHandler(_stream_handler)
+logger.setLevel(DEBUG)
 
 
 class DQN(nn.Module):
@@ -37,7 +43,7 @@ class DQN(nn.Module):
         x = self.feature(x)
         x = x.view(x.size()[0], -1)
         x = F.relu(self.fc(x))
-        return self.output(x)
+        return F.softmax(self.output(x))
 
     @staticmethod
     def loss(output, target):
@@ -49,21 +55,24 @@ class DQN(nn.Module):
 
 
 class Agent(object):
-    def __init__(self, env: gym.Env, network: nn.Module, gamma, epsilon, final_epsilon):
+    def __init__(self, env: gym.Env, network: nn.Module, gamma, epsilon, final_epsilon, final_exp_step):
         self.env = env
         self.action_size = self.env.action_space.n
         self.net = network(self.action_size)
         self.target_net = network(self.action_size)
         self.update_target_net()
         self.gamma = gamma
+        self._epsilon = epsilon
         self.epsilon = epsilon
-        self.final_epsilon = final_epsilon
+        self._final_epsilon = final_epsilon
+        self._final_exp_step = final_exp_step
+        self._step_counter = 0
 
     def policy(self, state):
         """
         epsilon greedy, state should be np.ndarray
         """
-        if random() < self.epsilon:
+        if random() <= self.epsilon:
             action = randrange(0, self.action_size)
         else:
             state = Variable(torch.from_numpy(np.array(state))).unsqueeze(dim=0)
@@ -71,33 +80,37 @@ class Agent(object):
         return action
 
     def parameter_scheduler(self):
-        self.epsilon /= 2
-        if self.epsilon < self.final_epsilon:
-            self.epsilon = self.final_epsilon
+        self._step_counter += 1
+        if self._step_counter < self._final_exp_step:
+            self.epsilon = self._step_counter * (
+                self._final_epsilon - self._epsilon) / self._final_exp_step + self._epsilon
 
     def update_target_net(self):
-        logging.info("updated traget network")
+        logger.info("updated traget network")
         self.target_net.load_state_dict(self.net.state_dict())
 
     def estimate_value(self, reward, state, done):
         q_hat = self.target_net(state).max(dim=1)[0]
-        print(q_hat)
         return reward + self.gamma * done * q_hat
 
     def q_value(self, state, action):
-        return self.net(state).gather(1, Variable(action.view(-1, 1)))
+        return self.net(state).gather(1, Variable(action.squeeze(dim=1)))
 
     def test(self):
         done = False
+        state = self.env.reset()
         while not done:
-            pass
+            self.env.render()
+            _state = Variable(torch.from_numpy(np.array(state))).unsqueeze(dim=0)
+            action = self.net(_state).data.view(-1).max(dim=0)[1].sum()
+            state, reward, done, _ = self.env.step(action)
 
 
 class Trainer(object):
     def __init__(self, agent: Agent, lr, memory_size, update_freq, batch_size, replay_start):
         self.agent = agent
         self.env = self.agent.env
-        self.optimizer = optim.RMSprop(params=agent.net.parameters(), lr=lr)
+        self.optimizer = optim.RMSprop(params=self.agent.net.parameters(), lr=lr, momentum=0.95)
         self.memory = Memory(memory_size)
         self.update_freq = update_freq
         self.batch_size = batch_size
@@ -106,6 +119,9 @@ class Trainer(object):
         self.warm_up()
 
     def warm_up(self):
+        """
+        to populate replay memory
+        """
         state_b = self.env.reset()
         for _ in tqdm(range(self.replay_start)):
             action = self.env.action_space.sample()
@@ -116,7 +132,6 @@ class Trainer(object):
     def _train(self):
         """
         neural network part
-        :return:
         """
         self.optimizer.zero_grad()
         batch_state_b, batch_action, batch_reward, batch_state_a, batch_done = self.get_batch()
@@ -142,12 +157,11 @@ class Trainer(object):
                 if self._step % self.update_freq == 0:
                     self.agent.update_target_net()
                 train_reward.append(reward)
+                self.agent.parameter_scheduler()
 
                 if self._step % 100 == 0:
-                    logging.info(f"step: {self._step}/{np.mean(train_loss):.2f}/{np.mean(train_reward):.2f}")
-                    logging.debug(f">>ε:{self.agent.epsilon}")
-            self.agent.parameter_scheduler()
-        return self.agent
+                    logger.info(f"step: {self._step}/{np.mean(train_loss):.2f}/{np.mean(train_reward):.2f}")
+                    logger.debug(f">>ε:{self.agent.epsilon:.2f}")
 
     def get_batch(self):
         batch = self.memory.sample(self.batch_size)
@@ -163,9 +177,11 @@ class Trainer(object):
 
 def main():
     env = convert_env(gym.make("Pong-v0"))
-    agent = Agent(env, DQN, 0.99, 1, 0.1)
-    trainer = Trainer(agent, 2.5e-4, 1_000_000, 5_000, 32, 50_000)
-    trainer.train(100)
+    agent = Agent(env, DQN, 0.99, 1, 0.1, 1_000_000)
+    trainer = Trainer(agent, 2.5e-4, 1_000_000, 100_000, 32, 50_000)
+    trainer.train(1000)
+    torch.save(trainer.agent.net.state_dict(),
+               "dqn.wt")
 
 
 if __name__ == '__main__':
