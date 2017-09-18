@@ -1,20 +1,28 @@
 This repository is for learning *reinforcement learning* using PyTorch.
+# how to use
+
+Run config file as below to set `PYTHONPATH`.
+
+```
+cd pre-dl # or dl
+. ./config.sh
+```
 
 # Contents
 ## pre-dl
 
 [pre-dl](./pre-dl) contains some algorithms without Deep Learning. Here, PyTorch is just numpy-alternative.
-* lookup table
+* [lookup table](./pre-dl/table)
     + Q-Learning
     + SARSA
         - n-step SARSA
         - SARSA(λ)
     + DynaQ (Model Free Approach)
 
-* function approximation
+* [function approximation](./pre-dl/function_approximation)
     + Q-learning
     + SARSA
-* policy gradient
+* [policy gradient](./pre-dl/policy_gradient)
     + REINFORCE
     + REINFORCE with baseline
     + actor-critic
@@ -22,11 +30,12 @@ This repository is for learning *reinforcement learning* using PyTorch.
 For simplicity, each algorithms inherit `FooBase` in `pre-dl/foo/foo_base.py` which inherits `RLBase` in `pre-dl/base.py`.
 
 [dl](./dl) contains some algorithms using DL.
-* No Contents
+* [Deep Q-Network](./dl/dqn)
 
 # Dependency
 
 * [gym](https://gym.openai.com/)
+    + `gym` requires a lot depends on your environment thus read the official document before using pip.
 
 ```
 git clone https://github.com/openai/gym
