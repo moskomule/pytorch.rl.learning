@@ -39,22 +39,18 @@ class DQN(nn.Module):
         super(DQN, self).__init__()
         self.feature = nn.Sequential(
                 nn.Conv2d(4, 32, kernel_size=8, stride=4),
-                nn.BatchNorm2d(32),
                 nn.ReLU(inplace=True),
                 nn.Conv2d(32, 64, kernel_size=4, stride=2),
-                nn.BatchNorm2d(64),
                 nn.ReLU(inplace=True),
                 nn.Conv2d(64, 64, kernel_size=3, stride=1),
-                nn.BatchNorm2d(64),
                 nn.ReLU(inplace=True))
         self.fc = nn.Linear(64 * 7 * 7, 512)
-        self.bn = nn.BatchNorm2d(512)
         self.output = nn.Linear(512, output_size)
 
     def forward(self, x):
         x = self.feature(x)
         x = x.view(x.size()[0], -1)
-        x = F.relu(self.bn(self.fc(x)))
+        x = F.relu(self.fc(x))
         x = self.output(x)
         return x
 
@@ -131,7 +127,7 @@ class Trainer(object):
     def __init__(self, agent: Agent, lr, memory_size, update_freq, batch_size, replay_start):
         self.agent = agent
         self.env = self.agent.env
-        self.optimizer = optim.RMSprop(params=self.agent.net.parameters(), lr=lr, momentum=0.95)
+        self.optimizer = optim.Adam(params=self.agent.net.parameters(), lr=lr)
         self.memory = Memory(memory_size)
         self.update_freq = update_freq
         self.batch_size = batch_size
