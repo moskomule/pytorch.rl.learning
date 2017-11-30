@@ -1,6 +1,5 @@
 from collections import namedtuple
 from random import random, randrange
-from logging import getLogger, FileHandler, INFO, DEBUG
 
 import numpy as np
 import torch
@@ -9,10 +8,16 @@ from torch.nn import functional as F
 from torch.autograd import Variable
 
 import gym
+from tensorboardX import SummaryWriter
 from tqdm import tqdm
-from utils import convert_env, Memory
+
+from utils import make_atari, wrap_atari_dqn, Memory
 
 cuda = torch.cuda.is_available()
+
+
+def to_tensor(lazy_frame):
+    return torch.from_numpy(np.array(lazy_frame))
 
 
 def variable(t: torch.Tensor, **kwargs):
@@ -22,11 +27,6 @@ def variable(t: torch.Tensor, **kwargs):
 
 
 Transition = namedtuple("Transition", ["state_b", "action", "reward", "state_a", "done"])
-logger = getLogger(__name__)
-file_handler = FileHandler("dqn.log")
-file_handler.setLevel(DEBUG)
-logger.setLevel(INFO)
-logger.addHandler(file_handler)
 
 
 class DQN(nn.Module):
@@ -56,9 +56,6 @@ class DQN(nn.Module):
 
     @staticmethod
     def loss(output, target, *args):
-        """
-        squared distance
-        """
         assert isinstance(output, Variable) and isinstance(target, Variable)
         # return torch.mean(torch.sum((output - target).clamp(-1, 1) ** 2, dim=1))
         return F.smooth_l1_loss(output, target, size_average=False)
@@ -96,14 +93,12 @@ class Agent(object):
         self._step_counter += 1
         if self._step_counter < self._final_exp_step:
             self.epsilon = self._step_counter * (
-                self._final_epsilon - self._epsilon) / self._final_exp_step + self._epsilon
-        logger.debug(f"ε: {self.epsilon:.2f}")
+                    self._final_epsilon - self._epsilon) / self._final_exp_step + self._epsilon
 
     def update_target_net(self):
         self.target_net.load_state_dict(self.net.state_dict())
         for p in self.target_net.parameters():
             p.requires_grad = False
-        logger.info("updated traget network")
 
     def estimate_value(self, reward, state, done):
         q_hat = self.target_net(variable(state)).max(dim=1)[0]
@@ -118,13 +113,14 @@ class Agent(object):
         state = self.env.reset()
         while not done:
             self.env.render()
-            _state = variable(torch.from_numpy(np.array(state))).unsqueeze(dim=0)
+            _state = variable(to_tensor(state).unsqueeze(dim=0))
             action = self.net(_state).data.view(-1).max(dim=0)[1].sum()
             state, reward, done, _ = self.env.step(action)
 
 
 class Trainer(object):
-    def __init__(self, agent: Agent, lr, memory_size, update_freq, batch_size, replay_start):
+    def __init__(self, agent: Agent, lr, memory_size, update_freq, batch_size, replay_start, log_dir=None,
+                 log_ep=5, log_step=20):
         self.agent = agent
         self.env = self.agent.env
         self.optimizer = optim.Adam(params=self.agent.net.parameters(), lr=lr)
@@ -134,13 +130,16 @@ class Trainer(object):
         self.replay_start = replay_start
         self._step = 0
         self._warmed = False
+        self.writer = SummaryWriter(log_dir)
+        self.log_ep = log_ep
+        self.log_step = log_step
 
     def warm_up(self):
         """
         to populate replay memory
         """
-        logger.info("warming up")
         state_b = self.env.reset()
+        self._warmed = True
         for _ in tqdm(range(self.replay_start)):
             action = self.env.action_space.sample()
             state_a, reward, done, _ = self.env.step(action)
@@ -155,19 +154,21 @@ class Trainer(object):
         batch_state_b, batch_action, batch_reward, batch_state_a, batch_done = self.get_batch()
         target = self.agent.estimate_value(batch_reward, batch_state_a, batch_done)
         q_value = self.agent.q_value(batch_state_b, batch_action)
-        if self._step % 1000 == 0:
-            logger.info(f"target: {target.data.view(-1).tolist()[:5]}")
-            logger.info(f"q_value: {q_value.data.view(-1).tolist()[:5]}")
-            logger.info(f"epsilon: {self.agent.epsilon}")
         loss = self.agent.net.loss(q_value, target)
         loss.backward()
         self.optimizer.step()
+
+        if self._step % self.log_step == 0:
+            diff = (target.data - q_value.data).cpu().mean()
+            self.writer.add_scalar("epsilon", self.agent.epsilon, self._step)
+            self.writer.add_scalar("target-q_value", diff, self._step)
+            self.writer.add_scalar("loss", loss.data.cpu()[0], self._step)
+
         return loss.data[0]
 
     def train(self, episode):
         if not self._warmed:
             self.warm_up()
-        logger.info("start training!")
         for ep in range(episode):
             done = False
             state_b = self.env.reset()
@@ -187,27 +188,41 @@ class Trainer(object):
                 actions.append(action)
                 self.agent.parameter_scheduler()
 
-            logger.info(f"ep: {ep+1:>5}/step: {self._step:>6}/"
-                        f"loss: {np.mean(train_loss):>7.2f}/reward: {sum(train_reward):.2f}/size: {len(train_loss)}")
-            if ep % 50 == 0:
-                logger.info(f"actions: {actions}")
+            if ep == 0:
+                # to check if the input is correct
+                self.writer.add_image("input", to_tensor(state_b)[0], 0)
+
+            if ep % self.log_ep == 0:
+                self.writer.add_scalar("reward", sum(train_reward), ep)
+
+                for name, param in self.agent.net.named_parameters():
+                    self.writer.add_histogram(name, param.clone().cpu().data.numpy(), ep)
+
+                for name, param in self.agent.target_net.named_parameters():
+                    self.writer.add_histogram(name, param.clone().cpu().data.numpy(), ep)
+                print(f"ep: {ep+1:>5}/step: {self._step:>6}/"
+                      f"loss: {np.mean(train_loss):>7.2f}/reward: {sum(train_reward):.2f}/size: {len(train_loss)}")
+
+        self.writer.close()
 
     def get_batch(self):
         batch = self.memory.sample(self.batch_size)
-        batch_state_b = torch.cat([torch.from_numpy(np.array(m.state_b)).unsqueeze(0) / 255 for m in batch], dim=0)
+        batch_state_b = torch.cat([to_tensor(m.state_b).unsqueeze(0) for m in batch], dim=0)
         batch_action = torch.LongTensor([m.action for m in batch])
         batch_reward = torch.Tensor([m.reward for m in batch])
-        batch_state_a = torch.cat([torch.from_numpy(np.array(m.state_a)).unsqueeze(0) / 255 for m in batch], dim=0)
+        batch_state_a = torch.cat([to_tensor(m.state_a).unsqueeze(0) for m in batch], dim=0)
         # tensor 0 if done else 1
         batch_done = 1 - torch.Tensor([m.done for m in batch])
         return batch_state_b, batch_action, batch_reward, batch_state_a, batch_done
 
 
 def main(is_debug=False):
-    env = convert_env(gym.make("Pong-v4"))
+    env = make_atari("Pong" + "NoFrameskip-v4")
+    env = wrap_atari_dqn(env)
+
     if is_debug:
         agent = Agent(env, DQN, 0.99, 1, 0.1, 10_000)
-        trainer = Trainer(agent, 2.5e-4, 10_000, 10_000, 16, 5_000)
+        trainer = Trainer(agent, 2.5e-4, 10_000, 10_000, 16, 500)
     else:
         agent = Agent(env, DQN, 0.99, 1, 0.1, 1_000_000)
         trainer = Trainer(agent, 2.5e-4, 1_000_000, 10_000, 32, 50_000)
