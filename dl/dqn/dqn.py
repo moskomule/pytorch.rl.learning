@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from random import random, randrange
 
 import numpy as np
@@ -155,7 +156,7 @@ class Trainer(object):
         self._val_freq = val_freq
         self.log_freq_by_step = log_freq_by_step
         self.log_freq_by_ep = log_freq_by_ep
-        self.writer = SummaryWriter(log_dir)
+        self.writer = SummaryWriter(os.path.join(log_dir, datetime.now().strftime('%b%d_%H-%M-%S')))
         self.writer.add_text("description", description, 0)
         if weight_dir is not None and not os.path.exists(weight_dir):
             os.makedirs(weight_dir)

@@ -1,7 +1,7 @@
 This repository is for learning *reinforcement learning* using PyTorch.
 # how to use
 
-Run config file as below to set this root dir as `PYTHONPATH`.
+Set this root dir as `PYTHONPATH`.
 
 ```
 export PYTHONPATH=$(pwd)

@@ -1,1 +1,1 @@
-from utils import make_atari, Memory, Transition
+from .utils import make_atari, Memory, Transition

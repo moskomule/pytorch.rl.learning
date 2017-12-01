@@ -1,5 +1,5 @@
 from dl import make_atari
-from dqn import Agent, Trainer, DQN
+from . import Agent, Trainer, DQN
 
 
 def main(env, gamma, epsilon, final_epsilon, final_exp_step,
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     p.add_argument("--val_freq", type=int, default=250_000)
     p.add_argument("--log_freq_by_step", type=int, default=500)
     p.add_argument("--log_freq_by_ep", type=int, default=10)
-    p.add_argument("--log_dir", default=None)
+    p.add_argument("--log_dir", default="../tensorboard/DQN")
     p.add_argument("--weight_dir", default=None)
     args = p.parse_args()
 
