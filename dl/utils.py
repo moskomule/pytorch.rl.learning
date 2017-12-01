@@ -1,5 +1,5 @@
 from random import sample
-from collections import deque
+from collections import deque, namedtuple
 
 import numpy as np
 import gym
@@ -220,17 +220,16 @@ class LazyFrames(object):
         return out
 
 
-def make_atari(env_id):
-    env = gym.make(env_id)
-    assert 'NoFrameskip' in env.spec.id
-    env = NoopResetEnv(env, noop_max=30)
-    env = MaxAndSkipEnv(env, skip=4)
-    return env
-
-
-def wrap_deepmind(env, episode_life=True, clip_rewards=True, frame_stack=False, scale=False):
+def make_atari(env_id, noop=True, max_and_skip=True, episode_life=True, clip_rewards=True, frame_stack=True,
+               scale=True):
     """Configure environment for DeepMind-style Atari.
     """
+    env = gym.make(env_id)
+    assert 'NoFrameskip' in env.spec.id
+    if noop:
+        env = NoopResetEnv(env, noop_max=30)
+    if max_and_skip:
+        env = MaxAndSkipEnv(env, skip=4)
     if episode_life:
         env = EpisodicLifeEnv(env)
     if 'FIRE' in env.unwrapped.get_action_meanings():
@@ -245,5 +244,7 @@ def wrap_deepmind(env, episode_life=True, clip_rewards=True, frame_stack=False, 
     return env
 
 
-def wrap_atari_dqn(env):
-    return wrap_deepmind(env, frame_stack=True, scale=True)
+###
+# state transition tuple
+###
+Transition = namedtuple("Transition", ["state_before", "action", "reward", "state_after", "done"])

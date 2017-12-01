@@ -1,4 +1,4 @@
-from collections import namedtuple
+import os
 from random import random, randrange
 
 import numpy as np
@@ -11,9 +11,9 @@ import gym
 from tensorboardX import SummaryWriter
 from tqdm import tqdm
 
-from utils import make_atari, wrap_atari_dqn, Memory
+from dl import Memory, Transition
 
-cuda = torch.cuda.is_available()
+cuda_available = torch.cuda.is_available()
 
 
 def to_tensor(lazy_frame):
@@ -21,19 +21,14 @@ def to_tensor(lazy_frame):
 
 
 def variable(t: torch.Tensor, **kwargs):
-    if cuda:
+    if cuda_available:
         t = t.cuda()
     return Variable(t, **kwargs)
-
-
-Transition = namedtuple("Transition", ["state_b", "action", "reward", "state_a", "done"])
 
 
 class DQN(nn.Module):
     def __init__(self, output_size: int):
         """
-        naïve implementation of Deep Q Network proposed in Nature 2015
-        naïve: showing a lack of experience, wisdom, or judgement
         :param output_size: actions
         """
         super(DQN, self).__init__()
@@ -62,38 +57,51 @@ class DQN(nn.Module):
 
 
 class Agent(object):
-    def __init__(self, env: gym.Env, network: nn.Module, gamma, epsilon, final_epsilon, final_exp_step):
+    def __init__(self, env: gym.Env, network, gamma, epsilon, final_epsilon, final_exp_step):
+        """
+        :param env: environment
+        :param network: network class s.t. DQN (maybe not good way)
+        :param gamma: discount rate
+        :param epsilon: initial exploration rate
+        :param final_epsilon: final exploration rate
+        :param final_exp_step: the step terminating exploration
+        """
         self.env = env
         self.action_size = self.env.action_space.n
         self.net = network(self.action_size)
         self.target_net = network(self.action_size)
-        self.gamma = gamma
-        self._epsilon = epsilon
+        self._gamma = gamma
+        self._initial_epsilon = epsilon
         self.epsilon = epsilon
         self._final_epsilon = final_epsilon
         self._final_exp_step = final_exp_step
-        self._step_counter = 0
-        if cuda:
+        self._step = 0
+        if cuda_available:
             self.net.cuda()
             self.target_net.cuda()
         self.update_target_net()
 
     def policy(self, state):
         """
-        epsilon greedy, state should be np.ndarray
+        epsilon greedy ploicy
+        :param state: np.adarray
+        :return: action for given state
         """
         if random() <= self.epsilon:
             action = randrange(0, self.action_size)
         else:
-            state = variable(torch.from_numpy(np.array(state))).unsqueeze(0)
+            state = variable(to_tensor(state).unsqueeze(0))
             action = self.net(state).data.view(-1).max(dim=0)[1].sum()
         return action
 
     def parameter_scheduler(self):
-        self._step_counter += 1
-        if self._step_counter < self._final_exp_step:
-            self.epsilon = self._step_counter * (
-                    self._final_epsilon - self._epsilon) / self._final_exp_step + self._epsilon
+        """
+        \epsilon_t =epsilon_0 + t * \frac{\epsilon_T-\epsilon_0}{\epsilon_0}
+        """
+        self._step += 1
+        if self._step < self._final_exp_step:
+            self.epsilon = self._step * (
+                    self._final_epsilon - self._initial_epsilon) / self._final_exp_step + self._initial_epsilon
 
     def update_target_net(self):
         self.target_net.load_state_dict(self.net.state_dict())
@@ -102,139 +110,146 @@ class Agent(object):
 
     def estimate_value(self, reward, state, done):
         q_hat = self.target_net(variable(state)).max(dim=1)[0]
-        estim = variable(reward) + self.gamma * variable(done) * q_hat
-        return estim
+        estimated = variable(reward) + self._gamma * variable(done) * q_hat
+        return estimated
 
     def q_value(self, state, action):
         return self.net(variable(state)).gather(1, variable(action.unsqueeze(dim=1)))
 
-    def render(self):
-        done = False
-        state = self.env.reset()
-        while not done:
-            self.env.render()
-            _state = variable(to_tensor(state).unsqueeze(dim=0))
-            action = self.net(_state).data.view(-1).max(dim=0)[1].sum()
-            state, reward, done, _ = self.env.step(action)
+    def save(self, file_name):
+        torch.save(self.net.state_dict(), file_name)
 
 
 class Trainer(object):
-    def __init__(self, agent: Agent, lr, memory_size, update_freq, batch_size, replay_start, log_dir=None,
-                 log_ep=5, log_step=20):
+    def __init__(self, agent: Agent, val_env: gym.Env, lr, memory_size, target_update_freq, gradient_update_freq,
+                 batch_size, replay_start, val_freq, log_freq_by_step, log_freq_by_ep, log_dir, weight_dir):
+        """
+        :param agent: agent object
+        :param val_env: environment for validation
+        :param lr: learning rate of optimizer
+        :param memory_size: size of replay memory
+        :param target_update_freq: frequency of update target network in steps
+        :param gradient_update_freq: frequency of q-network update in steps
+        :param batch_size:
+        :param replay_start:
+        :param val_freq:
+        :param log_freq_by_step:
+        :param log_freq_by_ep:
+        :param log_dir:
+        :param weight_dir:
+        """
         self.agent = agent
         self.env = self.agent.env
-        self.optimizer = optim.Adam(params=self.agent.net.parameters(), lr=lr)
+        self.val_env = val_env
+        self.optimizer = optim.RMSprop(params=self.agent.net.parameters(), lr=lr)
         self.memory = Memory(memory_size)
-        self.update_freq = update_freq
+        self.target_update_freq = target_update_freq
         self.batch_size = batch_size
         self.replay_start = replay_start
+        self.gradient_update_freq = gradient_update_freq
         self._step = 0
+        self._episode = 0
         self._warmed = False
+        self._val_freq = val_freq
+        self.log_freq_by_step = log_freq_by_step
+        self.log_freq_by_ep = log_freq_by_ep
         self.writer = SummaryWriter(log_dir)
-        self.log_ep = log_ep
-        self.log_step = log_step
+        if weight_dir is not None and not os.path.exists(weight_dir):
+            os.makedirs(weight_dir)
+        self.weight_dir = weight_dir
 
     def warm_up(self):
-        """
-        to populate replay memory
-        """
-        state_b = self.env.reset()
+        # to populate replay memory
+        state_before = self.env.reset()
         self._warmed = True
         for _ in tqdm(range(self.replay_start)):
             action = self.env.action_space.sample()
-            state_a, reward, done, _ = self.env.step(action)
-            self.memory(Transition(state_b, action, reward, state_a, done))
-            state_b = self.env.reset() if done else state_a
+            state_after, reward, done, _ = self.env.step(action)
+            self.memory(Transition(state_before, action, reward, state_after, done))
+            state_before = self.env.reset() if done else state_after
 
-    def _nn_part(self):
-        """
-        neural network part
-        """
+    def _train_nn(self):
+        # neural network part
         self.optimizer.zero_grad()
-        batch_state_b, batch_action, batch_reward, batch_state_a, batch_done = self.get_batch()
-        target = self.agent.estimate_value(batch_reward, batch_state_a, batch_done)
-        q_value = self.agent.q_value(batch_state_b, batch_action)
+        batch_state_before, batch_action, batch_reward, batch_state_after, batch_done = self.get_batch()
+        target = self.agent.estimate_value(batch_reward, batch_state_after, batch_done)
+        q_value = self.agent.q_value(batch_state_before, batch_action)
         loss = self.agent.net.loss(q_value, target)
-        loss.backward()
-        self.optimizer.step()
+        if self._step % self.gradient_update_freq == 0:
+            loss.backward()
+            self.optimizer.step()
 
-        if self._step % self.log_step == 0:
-            diff = (target.data - q_value.data).cpu().mean()
+        if self._step % self.log_freq_by_step == 0:
             self.writer.add_scalar("epsilon", self.agent.epsilon, self._step)
-            self.writer.add_scalar("target-q_value", diff, self._step)
+            self.writer.add_scalar("q_net-target", (q_value.data - target.data).mean(), self._step)
             self.writer.add_scalar("loss", loss.data.cpu()[0], self._step)
 
         return loss.data[0]
 
-    def train(self, episode):
+    def _loop(self, is_train):
+        # internal loop for both training and validation
+        done = False
+        state_before = self.env.reset() if is_train else self.val_env.reset()
+        loss_list = []
+        reward_list = []
+        while not done:
+            action = self.agent.policy(state_before)
+            state_after, reward, done, _ = self.env.step(action) if is_train else self.val_env.step(action)
+
+            if is_train:
+                self._step += 1
+                self.memory(Transition(state_before, action, reward, state_after, done))
+                self.agent.parameter_scheduler()
+                loss_list.append(self._train_nn())
+
+            state_before = state_after
+            reward_list.append(reward)
+            if self._step % self.target_update_freq == 0 and is_train:
+                self.agent.update_target_net()
+
+            if self._step % self._val_freq == 0 and is_train:
+                self.val()
+
+        return loss_list, reward_list, state_after
+
+    def train(self, max_step):
         if not self._warmed:
             self.warm_up()
-        for ep in range(episode):
-            done = False
-            state_b = self.env.reset()
-            train_loss = []
-            train_reward = []
-            actions = []
-            while not done:
-                self._step += 1
-                action = self.agent.policy(state_b)
-                state_a, reward, done, _ = self.env.step(action)
-                self.memory(Transition(state_b, action, reward, state_a, done))
-                state_b = state_a
-                train_loss.append(self._nn_part())
-                if self._step % self.update_freq == 0:
-                    self.agent.update_target_net()
-                train_reward.append(reward)
-                actions.append(action)
-                self.agent.parameter_scheduler()
+        while self._step < max_step:
+            self._episode += 1
+            train_loss, train_reward, _state = self._loop(is_train=True)
 
-            if ep == 0:
-                # to check if the input is correct
-                self.writer.add_image("input", to_tensor(state_b)[0], 0)
+            if self._episode == 1:
+                # for checking if the input is correct
+                self.writer.add_image("input", to_tensor(_state)[0], 0)
 
-            if ep % self.log_ep == 0:
-                self.writer.add_scalar("reward", sum(train_reward), ep)
+            if self._episode % self.log_freq_by_ep == 0:
+                self.writer.add_scalar("reward", sum(train_reward), self._step)
 
                 for name, param in self.agent.net.named_parameters():
-                    self.writer.add_histogram(name, param.clone().cpu().data.numpy(), ep)
+                    self.writer.add_histogram(f"qnet-{name}", param.clone().cpu().data.numpy(), self._step)
 
                 for name, param in self.agent.target_net.named_parameters():
-                    self.writer.add_histogram(name, param.clone().cpu().data.numpy(), ep)
-                print(f"ep: {ep+1:>5}/step: {self._step:>6}/"
+                    self.writer.add_histogram(f"target-{name}", param.clone().cpu().data.numpy(), self._step)
+                print(f"episode: {self._episode:>5}/step: {self._step:>6}/"
                       f"loss: {np.mean(train_loss):>7.2f}/reward: {sum(train_reward):.2f}/size: {len(train_loss)}")
 
         self.writer.close()
 
+    def val(self):
+        # validation
+        _, val_reward, _ = self._loop(is_train=False)
+        self.writer.add_scalar("val_reward", sum(val_reward), self._step)
+        if self.weight_dir is not None:
+            self.agent.save(os.path.join(self.weight_dir, f"{self._episode}.pkl"))
+
     def get_batch(self):
+        # return batch
         batch = self.memory.sample(self.batch_size)
-        batch_state_b = torch.cat([to_tensor(m.state_b).unsqueeze(0) for m in batch], dim=0)
+        batch_state_before = torch.cat([to_tensor(m.state_before).unsqueeze(0) for m in batch], dim=0)
         batch_action = torch.LongTensor([m.action for m in batch])
         batch_reward = torch.Tensor([m.reward for m in batch])
-        batch_state_a = torch.cat([to_tensor(m.state_a).unsqueeze(0) for m in batch], dim=0)
-        # tensor 0 if done else 1
+        batch_state_after = torch.cat([to_tensor(m.state_after).unsqueeze(0) for m in batch], dim=0)
+        # tensor: 0 if done else 1
         batch_done = 1 - torch.Tensor([m.done for m in batch])
-        return batch_state_b, batch_action, batch_reward, batch_state_a, batch_done
-
-
-def main(is_debug=False):
-    env = make_atari("Pong" + "NoFrameskip-v4")
-    env = wrap_atari_dqn(env)
-
-    if is_debug:
-        agent = Agent(env, DQN, 0.99, 1, 0.1, 10_000)
-        trainer = Trainer(agent, 2.5e-4, 10_000, 10_000, 16, 500)
-    else:
-        agent = Agent(env, DQN, 0.99, 1, 0.1, 1_000_000)
-        trainer = Trainer(agent, 2.5e-4, 1_000_000, 10_000, 32, 50_000)
-    trainer.train(50000)
-    torch.save(trainer.agent.net.state_dict(),
-               "dqn.wt")
-
-
-if __name__ == '__main__':
-    import argparse
-
-    p = argparse.ArgumentParser()
-    p.add_argument("--debug", action="store_true")
-    args = p.parse_args()
-    main(args.debug)
+        return batch_state_before, batch_action, batch_reward, batch_state_after, batch_done

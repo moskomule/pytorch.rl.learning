@@ -11,6 +11,8 @@ cd pre-dl # or dl
 # Contents
 ## pre-dl
 
+*I'm planning to rewrite pre-dl part*
+
 [pre-dl](./pre-dl) contains some algorithms without Deep Learning. Here, PyTorch is just numpy-alternative.
 * [lookup table](./pre-dl/table)
     + Q-Learning
@@ -31,20 +33,22 @@ For simplicity, each algorithms inherit `FooBase` in `pre-dl/foo/foo_base.py` wh
 
 [dl](./dl) contains some algorithms using DL.
 * [Deep Q-Network](./dl/dqn)
+    ```
+    cd dl/dqn
+    python exec.py [--env Pong ...]
+    ---
+    tensorboard log_dir runs
+    ```
 
-# Dependency
+# Dependencies
 
 * [gym](https://gym.openai.com/)
     + `gym` requires a lot depends on your environment thus read the official document before using pip.
-
-```
-git clone https://github.com/openai/gym
-cd gym
-pip install -e . # minimal install
-```
-
 * [PyTorch](http://pytorch.org/)
 * matplotlib
+* tensorboard-pytorch
+    + `pip install tensorboardX`
+
 
 # References
 
