@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 
-from table.table_base import TableBase
+from predl import TableBase
 
 
 class Sarsa(TableBase):
@@ -16,7 +16,7 @@ class Sarsa(TableBase):
             _state, reward, done, _ = self.env.step(action)
             _action = self.argmax(self.q_table[_state])
             self.q_table[self.state, action] += self.alpha * (
-                reward + self.gamma * self.q_table[_state, _action] - self.q_table[self.state, action])
+                    reward + self.gamma * self.q_table[_state, _action] - self.q_table[self.state, action])
             total_reward += reward
             self.state = _state
             action = _action

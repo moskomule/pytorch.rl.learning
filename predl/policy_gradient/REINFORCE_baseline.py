@@ -1,7 +1,7 @@
 import torch
 from torch import from_numpy as to_tensor
 
-from policy_gradient.REINFORCE import REINFORCE
+from .REINFORCE import REINFORCE
 
 
 class RFBaseline(REINFORCE):

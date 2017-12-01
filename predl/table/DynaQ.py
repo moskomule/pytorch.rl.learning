@@ -1,5 +1,5 @@
 from base import Memory
-from table.table_base import TableBase, Array2D
+from predl import TableBase, Array2D
 
 
 class DynaQ(TableBase):
@@ -22,14 +22,14 @@ class DynaQ(TableBase):
             self._history((self.state, action))
             _state, reward, done, _ = self.env.step(action)
             self.q_table[self.state, action] += self.alpha * (
-                reward + self.gamma * self.q_table[_state].max() - self.q_table[self.state, action])
+                    reward + self.gamma * self.q_table[_state].max() - self.q_table[self.state, action])
             self.m_table[self.state, action] = (reward, _state)
             # use model to update Q
             for _ in range(self.model_loop):
                 s, a = self._history.sample()
                 r, _s = self.m_table[s, a]
                 self.q_table[s, a] += self.alpha * (
-                    r + self.gamma * self.q_table[_s].max() - self.q_table[s, a])
+                        r + self.gamma * self.q_table[_s].max() - self.q_table[s, a])
             total_reward += reward
             self.state = _state
         return total_reward

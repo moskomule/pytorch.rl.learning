@@ -2,7 +2,7 @@ import gym
 import torch
 import random
 
-from base import RLBase
+from predl import RLBase
 
 
 class TableBase(RLBase):

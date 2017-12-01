@@ -3,7 +3,7 @@ import torch
 from torch import Tensor
 from torch import from_numpy as to_tensor
 
-from policy_gradient.pg_base import PGBase
+from predl import PGBase
 
 
 class REINFORCE(PGBase):

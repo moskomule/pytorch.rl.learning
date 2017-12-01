@@ -1,6 +1,6 @@
 from torch import Tensor
 
-from table.table_base import TableBase
+from predl import TableBase
 
 
 class SarsaLambda(TableBase):
@@ -49,6 +49,7 @@ def main(plot=True, env_name="Taxi-v2", test_init_state=77):
 
     if plot:
         import matplotlib.pyplot as plt
+
         plt.plot(sarsa1.rewards, label="lambda=0.1", alpha=0.5)
         plt.plot(sarsa5.rewards, label="lambda=0.5", alpha=0.5)
         plt.plot(sarsa9.rewards, label="lambda=0.9", alpha=0.5)

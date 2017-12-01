@@ -6,7 +6,7 @@ import random
 from functools import reduce
 from time import sleep
 
-from base import RLBase
+from predl import RLBase
 
 
 class FABase(RLBase):

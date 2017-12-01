@@ -1,6 +1,6 @@
 from torch import Tensor
 
-from table.table_base import TableBase
+from predl import TableBase
 
 
 class NstepSarsa(TableBase):

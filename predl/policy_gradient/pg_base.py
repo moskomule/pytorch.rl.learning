@@ -2,7 +2,7 @@ from functools import reduce
 from time import sleep
 import gym
 
-from base import RLBase
+from predl import RLBase
 
 
 class PGBase(RLBase):

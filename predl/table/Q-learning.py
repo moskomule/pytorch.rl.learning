@@ -1,4 +1,4 @@
-from table.table_base import TableBase
+from predl import TableBase
 
 
 class QLearing(TableBase):
@@ -14,7 +14,7 @@ class QLearing(TableBase):
 
             _state, reward, done, _ = self.env.step(action)
             self.q_table[self.state, action] += self.alpha * (
-                reward + self.gamma * self.q_table[_state].max() - self.q_table[self.state, action])
+                    reward + self.gamma * self.q_table[_state].max() - self.q_table[self.state, action])
             total_reward += reward
             self.state = _state
         return total_reward
@@ -35,6 +35,7 @@ def main(plot=True, env_name="Taxi-v2", test_init_state=77):
 
     if plot:
         import matplotlib.pyplot as plt
+
         plt.plot(ql1.rewards, label="alpha=0.1", alpha=0.5)
         plt.plot(ql5.rewards, label="alpha=0.5", alpha=0.5)
         plt.plot(ql9.rewards, label="alpha=0.9", alpha=0.5)

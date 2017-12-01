@@ -3,7 +3,7 @@ import torch
 from torch import Tensor
 from torch import from_numpy as to_tensor
 
-from policy_gradient.pg_base import PGBase
+from predl import PGBase
 
 
 class ActorCritic(PGBase):
@@ -37,7 +37,7 @@ class ActorCritic(PGBase):
             # \pi(a) = x^{\top}(a)w, where x is feature and w is weight
             # \nabla\ln\pi(a) = x(a)\sum_b \pi(b)x(b)
             direction = self.feature(_state, action) - sum(
-                [self.softmax @ torch.cat([self.feature(_state, a).unsqueeze(0) for a in self.actions])])
+                    [self.softmax @ torch.cat([self.feature(_state, a).unsqueeze(0) for a in self.actions])])
 
             self.weight += self.alpha * pow(self.gamma, iter) * delta * direction
             total_reward += reward
@@ -102,6 +102,7 @@ def main(plot=True, env_name='CartPole-v0'):
 
     if plot:
         import matplotlib.pyplot as plt
+
         plt.plot(ac.rewards)
         plt.show()
 

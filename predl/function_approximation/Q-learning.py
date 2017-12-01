@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 
-from function_approximation.fa_base import FABase
+from predl import FABase
 
 
 class QLearning(FABase):
