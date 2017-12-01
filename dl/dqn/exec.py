@@ -4,17 +4,19 @@ from dqn import Agent, Trainer, DQN
 
 def main(env, gamma, epsilon, final_epsilon, final_exp_step,
          lr, memory_size, target_update_freq, gradient_update_freq, batch_size, replay_start,
-         val_freq, log_freq_by_step, log_freq_by_ep, log_dir, weight_dir, **kwargs):
+         val_freq, log_freq_by_step, log_freq_by_ep, log_dir, weight_dir, steps):
     train_env = make_atari(env + "NoFrameskip-v4")
     val_env = make_atari(env + "NoFrameskip-v4", noop=False)
+
+    description = f"DQN"
 
     agent = Agent(train_env, DQN, gamma=gamma, epsilon=epsilon, final_epsilon=final_epsilon,
                   final_exp_step=final_exp_step)
     trainer = Trainer(agent, val_env, lr=lr, memory_size=memory_size, target_update_freq=target_update_freq,
                       gradient_update_freq=gradient_update_freq, batch_size=batch_size, replay_start=replay_start,
                       val_freq=val_freq, log_freq_by_step=log_freq_by_step, log_freq_by_ep=log_freq_by_ep,
-                      log_dir=log_dir, weight_dir=weight_dir)
-    trainer.train(args.steps)
+                      log_dir=log_dir, weight_dir=weight_dir, description=description)
+    trainer.train(steps)
 
 
 if __name__ == '__main__':

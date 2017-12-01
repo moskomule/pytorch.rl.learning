@@ -98,7 +98,6 @@ class Agent(object):
         """
         \epsilon_t =epsilon_0 + t * \frac{\epsilon_T-\epsilon_0}{\epsilon_0}
         """
-        self._step += 1
         if self._step < self._final_exp_step:
             self.epsilon = self._step * (
                     self._final_epsilon - self._initial_epsilon) / self._final_exp_step + self._initial_epsilon
@@ -122,7 +121,8 @@ class Agent(object):
 
 class Trainer(object):
     def __init__(self, agent: Agent, val_env: gym.Env, lr, memory_size, target_update_freq, gradient_update_freq,
-                 batch_size, replay_start, val_freq, log_freq_by_step, log_freq_by_ep, log_dir, weight_dir):
+                 batch_size, replay_start, val_freq, log_freq_by_step, log_freq_by_ep, log_dir, weight_dir,
+                 description):
         """
         :param agent: agent object
         :param val_env: environment for validation
@@ -130,13 +130,14 @@ class Trainer(object):
         :param memory_size: size of replay memory
         :param target_update_freq: frequency of update target network in steps
         :param gradient_update_freq: frequency of q-network update in steps
-        :param batch_size:
-        :param replay_start:
-        :param val_freq:
-        :param log_freq_by_step:
-        :param log_freq_by_ep:
-        :param log_dir:
-        :param weight_dir:
+        :param batch_size: batch size for q-net
+        :param replay_start: number of random exploration before starting
+        :param val_freq: frequency of validation in steps
+        :param log_freq_by_step: frequency of logging in steps
+        :param log_freq_by_ep: frequency of logging in episodes
+        :param log_dir: directory for saving tensorboard things
+        :param weight_dir: directory for saving weights when validated
+        :param: description: description for this training
         """
         self.agent = agent
         self.env = self.agent.env
@@ -154,6 +155,7 @@ class Trainer(object):
         self.log_freq_by_step = log_freq_by_step
         self.log_freq_by_ep = log_freq_by_ep
         self.writer = SummaryWriter(log_dir)
+        self.writer.add_text("description", description, 0)
         if weight_dir is not None and not os.path.exists(weight_dir):
             os.makedirs(weight_dir)
         self.weight_dir = weight_dir
