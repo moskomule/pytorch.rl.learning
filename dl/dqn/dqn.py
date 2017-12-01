@@ -98,6 +98,7 @@ class Agent(object):
         """
         \epsilon_t =epsilon_0 + t * \frac{\epsilon_T-\epsilon_0}{\epsilon_0}
         """
+        self._step += 1
         if self._step < self._final_exp_step:
             self.epsilon = self._step * (
                     self._final_epsilon - self._initial_epsilon) / self._final_exp_step + self._initial_epsilon
@@ -243,7 +244,7 @@ class Trainer(object):
         _, val_reward, _ = self._loop(is_train=False)
         self.writer.add_scalar("val_reward", sum(val_reward), self._step)
         if self.weight_dir is not None:
-            self.agent.save(os.path.join(self.weight_dir, f"{self._episode}.pkl"))
+            self.agent.save(os.path.join(self.weight_dir, f"{self._step}.pkl"))
 
     def get_batch(self):
         # return batch
