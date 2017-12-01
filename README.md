@@ -1,42 +1,36 @@
 This repository is for learning *reinforcement learning* using PyTorch.
 # how to use
 
-Run config file as below to set `PYTHONPATH`.
+Run config file as below to set this root dir as `PYTHONPATH`.
 
 ```
-cd pre-dl # or dl
-. ./config.sh
+export PYTHONPATH=$(pwd)
 ```
 
 # Contents
-## pre-dl
+## predl
 
-*I'm planning to rewrite pre-dl part*
-
-[pre-dl](./pre-dl) contains some algorithms without Deep Learning. Here, PyTorch is just numpy-alternative.
-* [lookup table](./pre-dl/table)
+[predl](./predl) contains some algorithms without Deep Learning. Here, PyTorch is just numpy-alternative.
+* [lookup table](./predl/table)
     + Q-Learning
     + SARSA
         - n-step SARSA
         - SARSA(λ)
     + DynaQ (Model Free Approach)
 
-* [function approximation](./pre-dl/function_approximation)
+* [function approximation](./predl/function_approximation)
     + Q-learning
     + SARSA
-* [policy gradient](./pre-dl/policy_gradient)
+* [policy gradient](./predl/policy_gradient)
     + REINFORCE
     + REINFORCE with baseline
     + actor-critic
-
-For simplicity, each algorithms inherit `FooBase` in `pre-dl/foo/foo_base.py` which inherits `RLBase` in `pre-dl/base.py`.
 
 ## dl
 
 [dl](./dl) contains some algorithms using DL.
 * [Deep Q-Network](./dl/dqn)
     ```
-    export PYTHONPATH=$(pwd) # root dir
     cd dl/dqn
     python exec.py [--env Pong ...] # `python exec.py -h` for help
     ---
