@@ -4,7 +4,7 @@ from dqn import Agent, Trainer, DQN
 
 def main(env, gamma, epsilon, final_epsilon, final_exp_step,
          lr, memory_size, target_update_freq, gradient_update_freq, batch_size, replay_start,
-         val_freq, log_freq_by_step, log_freq_by_ep, log_dir, weight_dir):
+         val_freq, log_freq_by_step, log_freq_by_ep, log_dir, weight_dir, **kwargs):
     train_env = make_atari(env + "NoFrameskip-v4")
     val_env = make_atari(env + "NoFrameskip-v4", noop=False)
 
@@ -40,4 +40,4 @@ if __name__ == '__main__':
     p.add_argument("--weight_dir", default=None)
     args = p.parse_args()
 
-    main(**args)
+    main(**vars(args))  # convert args to dict

@@ -31,11 +31,14 @@ cd pre-dl # or dl
 
 For simplicity, each algorithms inherit `FooBase` in `pre-dl/foo/foo_base.py` which inherits `RLBase` in `pre-dl/base.py`.
 
+## dl
+
 [dl](./dl) contains some algorithms using DL.
 * [Deep Q-Network](./dl/dqn)
     ```
+    export PYTHONPATH=$(pwd) # root dir
     cd dl/dqn
-    python exec.py [--env Pong ...]
+    python exec.py [--env Pong ...] # `python exec.py -h` for help
     ---
     tensorboard log_dir runs
     ```
