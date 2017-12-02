@@ -76,32 +76,31 @@ class Agent(object):
         self.epsilon = epsilon
         self._final_epsilon = final_epsilon
         self._final_exp_step = final_exp_step
-        self._step = 0
         if cuda_available:
             self.net.cuda()
             self.target_net.cuda()
         self.update_target_net()
 
-    def policy(self, state):
+    def policy(self, state, epsilon):
         """
         epsilon greedy ploicy
-        :param state: np.adarray
+        :param state: np.ndarray
+        :param epsilon: exploration rate
         :return: action for given state
         """
-        if random() <= self.epsilon:
+        if random() <= epsilon:
             action = randrange(0, self.action_size)
         else:
             state = variable(to_tensor(state).unsqueeze(0))
             action = self.net(state).data.view(-1).max(dim=0)[1].sum()
         return action
 
-    def parameter_scheduler(self):
+    def parameter_scheduler(self, step):
         """
         \epsilon_t =epsilon_0 + t * \frac{\epsilon_T-\epsilon_0}{\epsilon_0}
         """
-        self._step += 1
-        if self._step < self._final_exp_step:
-            self.epsilon = self._step * (
+        if step < self._final_exp_step:
+            self.epsilon = step * (
                     self._final_epsilon - self._initial_epsilon) / self._final_exp_step + self._initial_epsilon
 
     def update_target_net(self):
@@ -123,8 +122,8 @@ class Agent(object):
 
 class Trainer(object):
     def __init__(self, agent: Agent, val_env: gym.Env, lr, memory_size, target_update_freq, gradient_update_freq,
-                 batch_size, replay_start, val_freq, log_freq_by_step, log_freq_by_ep, log_dir, weight_dir,
-                 description):
+                 batch_size, replay_start, val_freq, log_freq_by_step, log_freq_by_ep, val_epsilon,
+                 log_dir, weight_dir):
         """
         :param agent: agent object
         :param val_env: environment for validation
@@ -137,9 +136,9 @@ class Trainer(object):
         :param val_freq: frequency of validation in steps
         :param log_freq_by_step: frequency of logging in steps
         :param log_freq_by_ep: frequency of logging in episodes
+        :param val_epsilon: exploration rate for validation
         :param log_dir: directory for saving tensorboard things
         :param weight_dir: directory for saving weights when validated
-        :param: description: description for this training
         """
         self.agent = agent
         self.env = self.agent.env
@@ -156,8 +155,8 @@ class Trainer(object):
         self._val_freq = val_freq
         self.log_freq_by_step = log_freq_by_step
         self.log_freq_by_ep = log_freq_by_ep
-        self.writer = SummaryWriter(os.path.join(log_dir, datetime.now().strftime('%b%d_%H-%M-%S')))
-        self.writer.add_text("description", description, 0)
+        self._val_epsilon = val_epsilon
+        self._writer = SummaryWriter(os.path.join(log_dir, datetime.now().strftime('%b%d_%H-%M-%S')))
         if weight_dir is not None and not os.path.exists(weight_dir):
             os.makedirs(weight_dir)
         self.weight_dir = weight_dir
@@ -184,9 +183,9 @@ class Trainer(object):
             self.optimizer.step()
 
         if self._step % self.log_freq_by_step == 0:
-            self.writer.add_scalar("epsilon", self.agent.epsilon, self._step)
-            self.writer.add_scalar("q_net-target", (q_value.data - target.data).mean(), self._step)
-            self.writer.add_scalar("loss", loss.data.cpu()[0], self._step)
+            self._writer.add_scalar("epsilon", self.agent.epsilon, self._step)
+            self._writer.add_scalar("q_net-target", (q_value.data - target.data).mean(), self._step)
+            self._writer.add_scalar("loss", loss.data.cpu()[0], self._step)
 
         return loss.data[0]
 
@@ -197,13 +196,14 @@ class Trainer(object):
         loss_list = []
         reward_list = []
         while not done:
-            action = self.agent.policy(state_before)
+            epsilon = self.agent.epsilon if is_train else self._val_epsilon
+            action = self.agent.policy(state_before, epsilon)
             state_after, reward, done, _ = self.env.step(action) if is_train else self.val_env.step(action)
 
             if is_train:
                 self._step += 1
                 self.memory(Transition(state_before, action, reward, state_after, done))
-                self.agent.parameter_scheduler()
+                self.agent.parameter_scheduler(self._step)
                 loss_list.append(self._train_nn())
 
             state_before = state_after
@@ -225,25 +225,25 @@ class Trainer(object):
 
             if self._episode == 1:
                 # for checking if the input is correct
-                self.writer.add_image("input", to_tensor(_state)[0], 0)
+                self._writer.add_image("input", to_tensor(_state)[0], 0)
 
             if self._episode % self.log_freq_by_ep == 0:
-                self.writer.add_scalar("reward", sum(train_reward), self._step)
+                self._writer.add_scalar("reward", sum(train_reward), self._step)
 
                 for name, param in self.agent.net.named_parameters():
-                    self.writer.add_histogram(f"qnet-{name}", param.clone().cpu().data.numpy(), self._step)
+                    self._writer.add_histogram(f"qnet-{name}", param.clone().cpu().data.numpy(), self._step)
 
                 for name, param in self.agent.target_net.named_parameters():
-                    self.writer.add_histogram(f"target-{name}", param.clone().cpu().data.numpy(), self._step)
+                    self._writer.add_histogram(f"target-{name}", param.clone().cpu().data.numpy(), self._step)
                 print(f"episode: {self._episode:>5}/step: {self._step:>6}/"
                       f"loss: {np.mean(train_loss):>7.2f}/reward: {sum(train_reward):.2f}/size: {len(train_loss)}")
 
-        self.writer.close()
+        self._writer.close()
 
     def val(self):
         # validation
         _, val_reward, _ = self._loop(is_train=False)
-        self.writer.add_scalar("val_reward", sum(val_reward), self._step)
+        self._writer.add_scalar("val_reward", sum(val_reward), self._step)
         if self.weight_dir is not None:
             self.agent.save(os.path.join(self.weight_dir, f"{self._step}.pkl"))
 
