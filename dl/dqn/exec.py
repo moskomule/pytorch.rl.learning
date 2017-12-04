@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     p = argparse.ArgumentParser()
     p.add_argument("--env", default="Pong")
-    p.add_argument("--steps", type=int, default=5_000_000)
+    p.add_argument("--steps", type=int, default=50_000_000)
     p.add_argument("--gamma", type=float, default=0.99)
     p.add_argument("--epsilon", type=float, default=1)
     p.add_argument("--final_epsilon", type=float, default=0.1)
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     p.add_argument("--gradient_update_freq", type=int, default=4)
     p.add_argument("--batch_size", type=int, default=32)
     p.add_argument("--replay_start", type=int, default=50_000)
-    p.add_argument("--val_freq", type=int, default=10_000)
+    p.add_argument("--val_freq", type=int, default=100_000)
     p.add_argument("--log_freq_by_step", type=int, default=1_000)
     p.add_argument("--log_freq_by_ep", type=int, default=10)
     p.add_argument("--val_epsilon", type=float, default=0.05)
