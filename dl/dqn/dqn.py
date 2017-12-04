@@ -219,26 +219,30 @@ class Trainer(object):
     def train(self, max_step):
         if not self._warmed:
             self.warm_up()
-        while self._step < max_step:
-            self._episode += 1
-            train_loss, train_reward, _state = self._loop(is_train=True)
 
-            if self._episode == 1:
-                # for checking if the input is correct
-                self._writer.add_image("input", to_tensor(_state)[0], 0)
+        try:
+            while self._step < max_step:
+                self._episode += 1
+                train_loss, train_reward, _state = self._loop(is_train=True)
 
-            if self._episode % self.log_freq_by_ep == 0:
-                self._writer.add_scalar("reward", sum(train_reward), self._step)
+                if self._episode == 1:
+                    # for checking if the input is correct
+                    self._writer.add_image("input", to_tensor(_state)[0], 0)
 
-                for name, param in self.agent.net.named_parameters():
-                    self._writer.add_histogram(f"qnet-{name}", param.clone().cpu().data.numpy(), self._step)
+                if self._episode % self.log_freq_by_ep == 0:
+                    self._writer.add_scalar("reward", sum(train_reward), self._step)
 
-                for name, param in self.agent.target_net.named_parameters():
-                    self._writer.add_histogram(f"target-{name}", param.clone().cpu().data.numpy(), self._step)
-                print(f"episode: {self._episode:>5}/step: {self._step:>6}/"
-                      f"loss: {np.mean(train_loss):>7.2f}/reward: {sum(train_reward):.2f}/size: {len(train_loss)}")
+                    for name, param in self.agent.net.named_parameters():
+                        self._writer.add_histogram(f"qnet-{name}", param.clone().cpu().data.numpy(), self._step)
 
-        self._writer.close()
+                    for name, param in self.agent.target_net.named_parameters():
+                        self._writer.add_histogram(f"target-{name}", param.clone().cpu().data.numpy(), self._step)
+                    print(f"episode: {self._episode:>5}/step: {self._step:>6}/"
+                          f"loss: {np.mean(train_loss):>7.2f}/reward: {sum(train_reward):.2f}/size: {len(train_loss)}")
+        except KeyboardInterrupt as ke:
+            print(ke)
+        finally:
+            self._writer.close()
 
     def val(self):
         # validation
