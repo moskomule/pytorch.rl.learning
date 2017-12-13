@@ -1,5 +1,5 @@
 from dl import make_atari
-from dqn import Agent, Trainer, DQN
+from dqn import Agent, Trainer
 
 
 def main(env, gamma, epsilon, final_epsilon, final_exp_step,
@@ -8,7 +8,7 @@ def main(env, gamma, epsilon, final_epsilon, final_exp_step,
     train_env = make_atari(env + "NoFrameskip-v4")
     val_env = make_atari(env + "NoFrameskip-v4", noop=False)
 
-    agent = Agent(train_env, DQN, gamma=gamma, epsilon=epsilon, final_epsilon=final_epsilon,
+    agent = Agent(train_env, gamma=gamma, epsilon=epsilon, final_epsilon=final_epsilon,
                   final_exp_step=final_exp_step)
     trainer = Trainer(agent, val_env, lr=lr, memory_size=memory_size, target_update_freq=target_update_freq,
                       gradient_update_freq=gradient_update_freq, batch_size=batch_size, replay_start=replay_start,

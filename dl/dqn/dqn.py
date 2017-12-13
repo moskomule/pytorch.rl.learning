@@ -58,10 +58,9 @@ class DQN(nn.Module):
 
 
 class Agent(object):
-    def __init__(self, env: gym.Env, network, gamma, epsilon, final_epsilon, final_exp_step):
+    def __init__(self, env: gym.Env, gamma, epsilon, final_epsilon, final_exp_step):
         """
         :param env: environment
-        :param network: network class s.t. DQN (maybe not good way)
         :param gamma: discount rate
         :param epsilon: initial exploration rate
         :param final_epsilon: final exploration rate
@@ -69,8 +68,8 @@ class Agent(object):
         """
         self.env = env
         self.action_size = self.env.action_space.n
-        self.net = network(self.action_size)
-        self.target_net = network(self.action_size)
+        self.net = DQN(self.action_size)
+        self.target_net = DQN(self.action_size)
         self._gamma = gamma
         self._initial_epsilon = epsilon
         self.epsilon = epsilon
