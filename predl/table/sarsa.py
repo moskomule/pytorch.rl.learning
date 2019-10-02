@@ -14,7 +14,7 @@ class Sarsa(TableBase):
         action = self.policy()
         while not done:
             _state, reward, done, _ = self.env.step(action)
-            _action = self.argmax(self.q_table[_state])
+            _action = self.policy()
             self.q_table[self.state, action] += self.alpha * (
                     reward + self.gamma * self.q_table[_state, _action] - self.q_table[self.state, action])
             total_reward += reward
